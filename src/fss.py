@@ -1,78 +1,116 @@
-import numpy as np
-import copy
-import random
+#!/usr/bin/env python
 
-# dim =(20,20) it is basically an array type thing.
+#import numpy as np
+#import copy
+import random
+import check_constraints as strain
+
 
 
 class Fish(object):
-    def __init__(self, dim):
-        self.pos = [nan for _ in range(dim)]
-        self.num = a
-        self.weight=w
+	def __init__(self, dim, w, school_ref):
+    	self.dim = dim
+    	self.X = [0 for _ in range(self.dim)]
+    	self.X_prev =  [0 for _ in range(self.dim)]	#dont know if its necessary
+    	self.Y_curr = 0
+    	self.Y_prev = 0
+        #self.id = a
+        self.W = w 		# initial weight of each fish is = wscale/2
+        				# which is a school parameter
+        self.f = 0 		#not sure if I should initialize it t 0
+        self.school = school_ref
+
+    def updateFish(self):
 
 
-class fschool(object)
-    def __init__(self, schoolsize, wscale)
-         self.school_size = schoolsize
-         self.wscale = wscale
-         self.prev_weight_school = 0.0
-         self.curr_weight_school = 0.0
-         self.best_fish = None
 
-         
-    def __init_fish(self, pos):
+    def set_pos(self, pos):
+    	self.X = X
+
+    def swim():
+    	#indiviual component of movement/soln search
+
+    def eat():
+    	#update weight basically/evaluate last swim == soln feasibility
+    	#weight calc depends on curr fitness which depends on prev n curr Y measure of the fish
+
+    def follow_the_school(self):
+    	#Fitness-based component
+    	# == collective-instinctive component of movement/soln search
+    	#basically finds weighted avg displacement of the school
+    	#net fitness/improvement is the deciding factor
+    	#fitness is directly dependent on Y measure of X of each fish
+    	#it doesnt involve curr or prev W of the fish or school
+
+    	
+    	#Weight-based component
+    	# == collective-volitive component of movement/soln search
+    	#basically spread or shrink based on based school health/weight improvement
+    	#shrink if school weight improved(basically move towards barycenter)
+    	#else spread : exploration component of the search (has random component)
+
+
+
+
+class School(object):
+    def __init__(self, schoolsize, dim, wscale):
+    	self.size = schoolsize
+    	self.wscale = wscale
+    	self.school = [Fish(self.dim, self.wscale/2) for _ in range(self.size)]
+    	self.prev_weight = 0.0
+    	self.curr_weight = 0.0
+    	self.f_school = 0				#school fitness
+    	self.best_fish = None 			#fish with max fitness
+    	self.y_measure = None 			#will be a function ptr or lambda
+     
+    
+    def init_fish_school(self, pos):
         fish = Fish(self.dim)
         fish.pos = pos
-        fish.weight = self.__gen_weight()
+        fish.weight = 
+
+
+    def updateFitness(self):
+    	a = self.curr_weight
+    	if a<15: 					#why 15? we need to define n initialize constants n param
+    		self.f_school -= 1
+    	else:
+    		self.f_school += 1
+
+    		#idk what this is 
+    def checkfitnessswarm(self, f, n):
+    	z= 1
+    	if fswarm/n<w*n/2:
+    		z=0
+
+    #school of fish should be a bin maxHeap with fish W as the key      
+    def updateBestFish(x): 
+
+    #basically heapify the new fish school list
+    	pass
+
+    def updateBarycenter(self):
+    	self.barycenter = [0 for _ in range(self.dim)] 
+    	for i in range(self.size):
+    		for j in range(self.dim):
+    			self.barycenter[j] += (self.school[i][j]*self.school[i].W)/self.curr_weight
+
+class Problem:
+	def __init__(self, dim, size, dataset):
+		self.dim = dim
+		self.size = size
+		self.dataset = dataset
+		self.constraints = [[0 for _ in range(self.dim)] for _ in range(self.dim)]
 
 
 
 
-    def __weight():
-      global w
-      w = random.randint(20,30)
+def generateRandList(dim, constraints):
+	X = [0 for _ in range(dim)]
+	#and some generation magic here possibly by partially solving the system of Lin. inequalities
+	return X
 
-    def __checkfitness():
-      a = w/2
-      global fswarm
-      if a<15:
-          fswarm=fswarm-1
-      else:
-          fswarm=fswarm+1
+def main():
+	return 0
 
-
-    def __checkfitnessswarm(f, n):
-      global z
-      z= 1
-      if fswarm/n<w*n/2:
-          z=0
-
-    def __bestfish(x):
-     global bfish
-     bfish = x
-
-    def __calculate_barycenter(self):
-        barycenter = np.zeros((self.dim,), dtype=np.float)
-         density = 0.0
-
-            for fish in self.fish:
-                density += fish.weight
-                for dim in range(self.dim):
-                    barycenter[dim] += (fish.pos[dim] * fish.weight)
-            for dim in range(self.dim):
-                barycenter[dim] = barycenter[dim] / density
-
-            return barycenter
-
-    
-def mainfunc():
-    
-    objs = list()
-    for i in range(10):
-        objs.append(Fish(i))
-
-
-    while z !=0:
-
-
+if __name__ == "__main__": main()
