@@ -96,17 +96,36 @@ class School(object):
     			self.barycenter[j] += (self.school[i][j]*self.school[i].W)/self.curr_weight
 
 class Problem:
-	def __init__(self, dim, size, dataset):
+	# def __init__(self, dim, size, dataset):
+	# 	self.dim = dim
+	# 	self.size = size
+	# 	self.dataset = dataset
+	# 	self.constraints = [[0 for _ in range(self.dim)] for _ in range(self.dim)]
+	def __init__(self, dim, objective, constraints, opt):
 		self.dim = dim
-		self.size = size
-		self.dataset = dataset
-		self.constraints = [[0 for _ in range(self.dim)] for _ in range(self.dim)]
+		self.obj_f = objective				# a function
+		self.constraints = constraints 		# None if unbounded	
+		self.opt_t = opt 					# minimize or maximize
+
+
+class Solver:
+	def __init__(self, max_iter, problm):
+		self.T = max_iter
+		self.t = 0 			# initial iteration = 0
+		self.problem = problm 	#Problem class obj
+
+	def initializeFSS(self):
+
+
+	def solve(self):
+
+
 
 
 
 
 def generateRandList(dim, constraints):
-	X = [0 for _ in range(dim)]
+	X = random.sample(range(-3, 3), dim)
 	#and some generation magic here possibly by partially solving the system of Lin. inequalities
 	return X
 
