@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 
-#import numpy as np
+
+#vanilla FSS (this algorithm is used for continuous optimization problems)
+#tests: find global maxima of Bivariate Polynomials of degree 4 (unbounded == no constraints)
+#Population = school size = 30
+
+
+
+import numpy as np
 #import copy
 import random
+<<<<<<< HEAD
 import check_constraints as strain
 
 
@@ -109,7 +117,66 @@ class School(object):
     	for i in range(self.size):
     		for j in range(self.dim):
     			self.barycenter[j] += (self.school[i][j]*self.school[i].W)/self.curr_weight
+=======
+#import check_constraints as strain
+class Fish:
+	def __init__(self, dim, x, w, fun):
+		self.dim = dim
+		self.X = x
+		self.X_prev = np.copy(x)
+		self.W = w
+		self.f = 1.0
+		self.f_prev = 1.0
+		self.y = 0
+		self.y_prev = 0
+		self.objective = fun
+	
+	def displace_ind(self, step_ind):
+		m = np.copy(self.X)
+		with np.nditer(m, op_flags=['readwrite']) as it:
+			for x in it:
+				x[...] = x + step_ind * random.uniform(-1.0,1.0)
+		m_y = self.objective(m)
+		if m_y > self.y:
+			self.y_prev = self.y
+			self.y = m_y
+			self.X_prev = self.X
+			self.X = m
 
+	def update_fitness(self):
+		self.f_prev = self.f
+		self.f += self.y - self.y_prev
+
+	
+	def feed(self, del_f_max):
+		self.W += (self.f - self.f_prev)/del_f_max 	# weight can decrease if fitness decreases
+		self.W = min(self.W, w_scale)
+
+	def displace_col_ins(self, m):
+		#m = np.zeroes(self.dim, dtype=float, order='C')
+		self.X_prev = self.X 	# is it just holding a reference (beocz then i will have to copy it everytime)
+		self.X += m  #numpy arr can be added like matrices ryt?
+
+	def displace_col_vol(self, bary, step_vol):
+		distance = get_euclidean_dist(self.X, bary, dim)
+		self.X_prev = self.X
+		self.X += (step_vol/distance) * (self.X - bary) # again idk if we can scale numpy array like matrices
+
+	
+
+
+>>>>>>> ce2a1cc... Update Fish class Add operators and fitness function
+
+
+
+#incomplete
+class School:
+	pass
+
+
+
+"""
+# for now this class wont be used much
 class Problem:
 	# def __init__(self, dim, size, dataset):
 	# 	self.dim = dim
@@ -120,31 +187,50 @@ class Problem:
 		self.dim = dim
 		self.obj_f = objective				# a function
 		self.constraints = constraints 		# None if unbounded	
-		self.opt_t = opt 					# minimize or maximize
+		self.opt_t = opt 					# minimize(True) or maximize(False)
 
 
+# the simulator class
 class Solver:
 	def __init__(self, max_iter, problm):
 		self.T = max_iter
 		self.t = 0 			# initial iteration = 0
 		self.problem = problm 	#Problem class obj
 
-	def initializeFSS(self):
+	#we pass FSS parameters here
+	def initializeFSS(self, wscale, stepvol, stepind, stepins ):
+
 
 
 	def solve(self):
+"""
 
+####HELPER FUNCTIONS
 
-
-
-
-
-def generateRandList(dim, constraints):
-	X = random.sample(range(-3, 3), dim)
+def generateRandList(dim, lower, upper):
+	X = np.random.randint(lower, upper, dim)
+	print(X)
 	#and some generation magic here possibly by partially solving the system of Lin. inequalities
 	return X
 
+
+#incomplete should return euclidean distance between n1 and n2 vectors
+def get_euclidean_dist(n1, n2):
+	n3 = n1- n2
+
+
+####TEST Functions == Objective functions to be optimized
+#test function 1 = P1(X) = P(x,y) = x^4 + 17y^3 -x^2 + 4
+def testFunction1(X):
+	print(type(X))
+	if isinstance(X, np.ndarray ):
+		return X[0]**4  + 17 * X[1]**3 -2* X[0]**2 + 4
+	else:
+		return None
+
+
 def main():
+
 	return 0
 
 if __name__ == "__main__": main()

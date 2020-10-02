@@ -54,5 +54,7 @@ def main():
 	# dat_file as input  --> dat_parser --> X and constraints
 	# but for since we dont have the parser we will just use manual input 
 	# or even lazier hard coded X and constraints 
-	
 
+
+if __name__ == "__main__":
+	main()
