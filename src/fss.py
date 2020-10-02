@@ -27,7 +27,22 @@ class Fish(object):
     def set_pos(self, pos):
     	self.X = X
 
-    def swim():
+    def swim(self):
+            #Attempt at indvidual movement here
+         for fish in self.school:
+            new_pos = np.zeros((self.dim,), dtype=np.float)
+            for dim in range(self.dim):
+                newpos[dim] = fish.pos[dim] + (self.newmovement * np.random.uniform(-1, 1))
+            #fitness is a predefined criteria here.
+            if fitness < fish.fitness:
+                fish.change_in_fitness = abs(newfitness - fitness)
+                fish.fitness = fitness
+                
+                for idx in range(self.dim):
+                    
+                fish.pos = newpos
+            else:
+               pass
     	#indiviual component of movement/soln search
 
     def eat():
