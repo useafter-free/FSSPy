@@ -10,7 +10,7 @@
 import numpy as np
 #import copy
 import random
-import check_constraints as strain
+# import check_constraints as strain
 
 
 
@@ -205,8 +205,10 @@ class Solver:
 
 ####HELPER FUNCTIONS
 
-def generateRandList(dim, lower, upper):
-	X = np.random.randint(lower, upper, dim)
+def generateRandList(dim, lower, upper, constraints = None):
+	#we need to change the dtype of X from int to float here
+	X = np.random.rand(dim)
+	X = (X * (upper-lower)) + lower
 	print(X)
 	#and some generation magic here possibly by partially solving the system of Lin. inequalities
 	return X
@@ -221,14 +223,14 @@ def get_euclidean_dist(n1, n2):
 #test function 1 = P1(X) = P(x,y) = x^4 + 17y^3 -x^2 + 4
 def testFunction1(X):
 	print(type(X))
-	if isinstance(X, np.ndarray ):
+	if isinstance(X, np.ndarray):
 		return X[0]**4  + 17 * X[1]**3 -2* X[0]**2 + 4
 	else:
 		return None
 
 
+
 def main():
 
 	return 0
-
 if __name__ == "__main__": main()
