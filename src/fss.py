@@ -14,104 +14,113 @@ import math
 # import check_constraints as strain
 
 
-# class Fish(object):
-# 	def __init__(self, dim, w, school_ref):
-#     	self.dim = dim
-#     	self.X = [0 for _ in range(self.dim)]
-#     	self.X_prev =  [0 for _ in range(self.dim)]	#dont know if its necessary
-#     	self.Y_curr = 0
-#     	self.Y_prev = 0
-#         #self.id = a
-#         self.W = w 		# initial weight of each fish is = wscale/2
-#         				# which is a school parameter
-#         self.f = 0 		#not sure if I should initialize it t 0
-#         self.school = school_ref
-
-#     def updateFish(self):
-
-
-#     def set_pos(self, pos):
-#     	self.X = X
-
-#     def swim(self):
-#             #Attempt at indvidual movement here
-#          for fish in self.school:
-#             new_pos = np.zeros((self.dim,), dtype=np.float)
-#             for dim in range(self.dim):
-#                 newpos[dim] = fish.pos[dim] + (self.newmovement * np.random.uniform(-1, 1))
-#             #fitness is a predefined criteria here.
-#             if fitness < fish.fitness:
-#                 fish.change_in_fitness = abs(newfitness - fitness)
-#                 fish.fitness = fitness
-
-#                 for idx in range(self.dim):
-
-#                 fish.pos = newpos
-#             else:
-#                pass
-#     	#indiviual component of movement/soln search
-
-#     def eat():
-#     	#update weight basically/evaluate last swim == soln feasibility
-#     	#weight calc depends on curr fitness which depends on prev n curr Y measure of the fish
-
-#     def follow_the_school(self):
-#     	#Fitness-based component
-# == collective-instinctive component of movement/soln search
-# basically finds weighted avg displacement of the school
-# net fitness/improvement is the deciding factor
-# fitness is directly dependent on Y measure of X of each fish
-# it doesnt involve curr or prev W of the fish or school
-
-# Weight-based component
-# == collective-volitive component of movement/soln search
-# basically spread or shrink based on based school health/weight improvement
-# shrink if school weight improved(basically move towards barycenter)
-# else spread : exploration component of the search (has random component)
+class School(object):
+    def __init__(self, population_size, dim, wscale, fun, stepi, stepvol):
+        self.size = population_size
+        self.w_scale = wscale
+        self.dim = dim
+        self.school = []
+        self.prev_weight = self.w_scale * self.size
+        self.curr_weight = self.w_scale * self.size
+        self.step_ind = stepi
+        self.step_vol = stepvol
+        self.del_f_max = 0.0				#school fitness
+        self.best_fish = None 			#fish with max Weight(index of that fish) or an iterator
+        self.objective = fun 			#will be a function ptr or lambda
+        self.barycenter = np.zeros(self.dim ,dtype = float, order = 'C')
+        self.col_ins_disp = np.zeros(self.dim ,dtype = float, order = 'C')
 
 
-# class School(object):
-#     def __init__(self, schoolsize, dim, wscale):
-#     	self.size = schoolsize
-#     	self.wscale = wscale
-#     	self.school = [Fish(self.dim, self.wscale/2) for _ in range(self.size)]
-#     	self.prev_weight = 0.0
-#     	self.curr_weight = 0.0
-#     	self.f_school = 0				#school fitness
-#     	self.best_fish = None 			#fish with max fitness
-#     	self.y_measure = None 			#will be a function ptr or lambda
+    def init_fish_school(self):
+        self.school = [(Fish(self.dim, generateRandList(self.dim, -30,31), self.w_scale/2, testFunction1)) for _ in range(self.size)]
 
 
-#     def init_fish_school(self, pos):
-#         fish = Fish(self.dim)
-#         fish.pos = pos
-#         fish.weight =
+    def print_school_info(self):
+        print('School Weight = ', self.curr_weight)
+        print('Prev School Weight = ', self.prev_weight)
+        print('Maximum fitness gain = ', self.del_f_max)
+        print('Bset Solution = ', self.best_fish.X)
 
 
-#     def updateFitness(self):
-#     	a = self.curr_weight
-#     	if a<15: 					#why 15? we need to define n initialize constants n param
-#     		self.f_school -= 1
-#     	else:
-#     		self.f_school += 1
+    #basically what happens in 1 iteration
+    #follows directly from the FSS algorithm pseudocode
+    def update_school(self):
+        #for each fish Perform the individual displacement (Equation 1)
+        for i in self.school:
+            i.displace_ind(self.step_ind)
+            #apply fitness function
+            i.update_fitness()
+            #i.print_fish_status()
+        #update the best fish in school(according to current fitness)
+        self.update_best_fish()
+        #for each fish Update its weight
+        for i in self.school:
+            i.feed(self.del_f_max, self.w_scale)
+        #for each fish Perform the collective instinctive displacement
+        #for that calculate the col ins disp vector == col ins disp
+        self.update_col_ins_vec()
+        for i in self.school:
+            i.displace_col_ins(self.col_ins_disp)
+        #for each fish Perform the collective volitive displacement
+        #for that update school's barycenter
+        self.update_barycenter()
+        if self.curr_weight > self.prev_weight:
+            self.step_vol = abs(self.step_vol)
+        else:
+            self.step_vol = -1 * abs(self.step_vol)
+        for i in self.school:
+            i.displace_col_vol(self.barycenter, self.step_vol)
+            i.update_fitness()
+        self.update_best_fish()
 
-#     		#idk what this is
-#     def checkfitnessswarm(self, f, n):
-#     	z= 1
-#     	if fswarm/n<w*n/2:
-#     		z=0
 
-#     #school of fish should be a bin maxHeap with fish W as the key
-#     def updateBestFish(x):
+    def update_col_ins_vec(self):
+        sigma_del_f = 0.0
+        for i in self.school:
+            sigma_del_f += i.del_f
+        self.col_ins_disp.fill(0.0)
+        for i in self.school:
+            self.col_ins_disp += i.del_f * (i.X - i.X_prev)
+        if sigma_del_f:
+            self.col_ins_disp *= 1/sigma_del_f
+        else:
+            self.col_ins_disp.fill(0.0)
+        
 
-#     #basically heapify the new fish school list
-#     	pass
 
-#     def updateBarycenter(self):
-#     	self.barycenter = [0 for _ in range(self.dim)]
-#     	for i in range(self.size):
-#     		for j in range(self.dim):
-#     			self.barycenter[j] += (self.school[i][j]*self.school[i].W)/self.curr_weight
+    def update_del_f_max(self):
+        max = self.school[0]
+        for i in self.school:
+            if self.school[i].del_f > max.del_f:
+                max = self.school[i]
+        self.del_f_max = max.del_f
+
+
+    def update_best_fish(self):
+        max = self.school[0]
+        for i in self.school:
+            if i.f > max.f:
+                max = i
+        self.best_fish = max
+
+
+    def update_barycenter(self):
+        self.update_school_w()
+        self.barycenter.fill(0.0)
+        for i in self.school:
+            self.barycenter += i.W * i.X
+        self.barycenter *= 1/self.curr_weight
+        print(self.barycenter)
+
+
+    def update_school_w(self):
+        self.prev_weight = self.curr_weight
+        self.curr_weight = 0.0
+        for i in self.school:
+            self.curr_weight += i.W
+        print(self.curr_weight)
+        
+            
 
 #import check_constraints as strain
 class Fish:
@@ -122,6 +131,7 @@ class Fish:
         self.W = w
         self.f = 1.0
         self.f_prev = 1.0
+        self.del_f = 0.0
         self.objective = fun
         self.y = self.objective(self.X)
         self.y_prev = self.objective(self.X_prev)
@@ -142,7 +152,9 @@ class Fish:
 
     def update_fitness(self):
         self.f_prev = self.f
-        self.f += self.y - self.y_prev
+        self.f += (self.y - self.y_prev)
+        self.del_f = self.f - self.f_prev
+
 
     def feed(self, del_f_max, w_scale):
         # weight can decrease if fitness decreases
@@ -153,14 +165,15 @@ class Fish:
     def displace_col_ins(self, m):
         #m = np.zeroes(self.dim, dtype=float, order='C')
         # is it just holding a reference (beocz then i will have to copy it everytime)
-        np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
+        self.y_prev = self.y
         self.X += m  # numpy arr can be added like matrices ryt?
+        
 
     def displace_col_vol(self, bary, step_vol):
         distance = get_euclidean_dist(self.X, bary)
-        np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         # again idk if we can scale numpy array like matrices
-        self.X += (step_vol/distance) * (self.X - bary)
+        self.X += random.uniform(0,1) * (step_vol / distance) * (self.X- bary)
+        self.y = self.objective(self.X)
 
     # debug functions
     def print_fish_status(self):
@@ -173,9 +186,6 @@ class Fish:
         print("y prev = ", self.y_prev)
 
 
-# incomplete
-class School:
-    pass
 
 
 """
@@ -230,9 +240,8 @@ def get_euclidean_dist(n1, n2):
 # test function 1 = bell curve = exp(-((x+5)^2+y^2))
 # global maxima is at (-5.0, 0)
 def testFunction1(X):
-    print(type(X))
     if isinstance(X, np.ndarray):
-        return math.exp(-((X[0]+5)**2 + X[1]*X[1]))
+        return math.exp(-((X[0]+5)*(X[0]+5) + X[1]*X[1]))
     else:
         return None
 
@@ -242,19 +251,22 @@ def testFunction1(X):
 
 
 def main():
-	x1 = generateRandList(2, -10, 10)
-	w_scale = 40.0
-	step_indiv = 1.0
-	f1 = Fish(2, x1, w_scale/2, testFunction1)
-	f1.print_fish_status()
-	T = 5000
-	for i in range(0,T):
-		print("Iteration = ", i)
-		f1.displace_ind(step_indiv)
-		f1.update_fitness()
-		f1.feed((f1.f - f1.f_prev), w_scale)
-		f1.print_fish_status()
-	return 0
+    # x1 = generateRandList(2, -10, 10)
+    # w_scale = 40.0
+    # step_indiv = 1.0
+    # f1 = Fish(2, x1, w_scale/2, testFunction1)
+    # f1.print_fish_status()
+    T = 30
+    # for i in range(0,T):
+    #     f1.displace_ind(step_indiv)
+    #     f1.update_fitness()
+    #     f1.feed((f1.f - f1.f_prev), w_scale)
+    s = School(5, 2, 40.0, testFunction1, 3.0, 2.0)
+    s.init_fish_school()
+    for i in range(0,T):
+        s.update_school()
+    s.print_school_info()
+    return 0
 
 
 if __name__ == "__main__":
