@@ -10,55 +10,54 @@
 import numpy as np
 #import copy
 import random
-<<<<<<< HEAD
 import check_constraints as strain
 
 
 
-class Fish(object):
-	def __init__(self, dim, w, school_ref):
-    	self.dim = dim
-    	self.X = [0 for _ in range(self.dim)]
-    	self.X_prev =  [0 for _ in range(self.dim)]	#dont know if its necessary
-    	self.Y_curr = 0
-    	self.Y_prev = 0
-        #self.id = a
-        self.W = w 		# initial weight of each fish is = wscale/2
-        				# which is a school parameter
-        self.f = 0 		#not sure if I should initialize it t 0
-        self.school = school_ref
+# class Fish(object):
+# 	def __init__(self, dim, w, school_ref):
+#     	self.dim = dim
+#     	self.X = [0 for _ in range(self.dim)]
+#     	self.X_prev =  [0 for _ in range(self.dim)]	#dont know if its necessary
+#     	self.Y_curr = 0
+#     	self.Y_prev = 0
+#         #self.id = a
+#         self.W = w 		# initial weight of each fish is = wscale/2
+#         				# which is a school parameter
+#         self.f = 0 		#not sure if I should initialize it t 0
+#         self.school = school_ref
 
-    def updateFish(self):
+#     def updateFish(self):
 
 
 
-    def set_pos(self, pos):
-    	self.X = X
+#     def set_pos(self, pos):
+#     	self.X = X
 
-    def swim(self):
-            #Attempt at indvidual movement here
-         for fish in self.school:
-            new_pos = np.zeros((self.dim,), dtype=np.float)
-            for dim in range(self.dim):
-                newpos[dim] = fish.pos[dim] + (self.newmovement * np.random.uniform(-1, 1))
-            #fitness is a predefined criteria here.
-            if fitness < fish.fitness:
-                fish.change_in_fitness = abs(newfitness - fitness)
-                fish.fitness = fitness
+#     def swim(self):
+#             #Attempt at indvidual movement here
+#          for fish in self.school:
+#             new_pos = np.zeros((self.dim,), dtype=np.float)
+#             for dim in range(self.dim):
+#                 newpos[dim] = fish.pos[dim] + (self.newmovement * np.random.uniform(-1, 1))
+#             #fitness is a predefined criteria here.
+#             if fitness < fish.fitness:
+#                 fish.change_in_fitness = abs(newfitness - fitness)
+#                 fish.fitness = fitness
                 
-                for idx in range(self.dim):
+#                 for idx in range(self.dim):
                     
-                fish.pos = newpos
-            else:
-               pass
-    	#indiviual component of movement/soln search
+#                 fish.pos = newpos
+#             else:
+#                pass
+#     	#indiviual component of movement/soln search
 
-    def eat():
-    	#update weight basically/evaluate last swim == soln feasibility
-    	#weight calc depends on curr fitness which depends on prev n curr Y measure of the fish
+#     def eat():
+#     	#update weight basically/evaluate last swim == soln feasibility
+#     	#weight calc depends on curr fitness which depends on prev n curr Y measure of the fish
 
-    def follow_the_school(self):
-    	#Fitness-based component
+#     def follow_the_school(self):
+#     	#Fitness-based component
     	# == collective-instinctive component of movement/soln search
     	#basically finds weighted avg displacement of the school
     	#net fitness/improvement is the deciding factor
@@ -75,49 +74,49 @@ class Fish(object):
 
 
 
-class School(object):
-    def __init__(self, schoolsize, dim, wscale):
-    	self.size = schoolsize
-    	self.wscale = wscale
-    	self.school = [Fish(self.dim, self.wscale/2) for _ in range(self.size)]
-    	self.prev_weight = 0.0
-    	self.curr_weight = 0.0
-    	self.f_school = 0				#school fitness
-    	self.best_fish = None 			#fish with max fitness
-    	self.y_measure = None 			#will be a function ptr or lambda
+# class School(object):
+#     def __init__(self, schoolsize, dim, wscale):
+#     	self.size = schoolsize
+#     	self.wscale = wscale
+#     	self.school = [Fish(self.dim, self.wscale/2) for _ in range(self.size)]
+#     	self.prev_weight = 0.0
+#     	self.curr_weight = 0.0
+#     	self.f_school = 0				#school fitness
+#     	self.best_fish = None 			#fish with max fitness
+#     	self.y_measure = None 			#will be a function ptr or lambda
      
     
-    def init_fish_school(self, pos):
-        fish = Fish(self.dim)
-        fish.pos = pos
-        fish.weight = 
+#     def init_fish_school(self, pos):
+#         fish = Fish(self.dim)
+#         fish.pos = pos
+#         fish.weight = 
 
 
-    def updateFitness(self):
-    	a = self.curr_weight
-    	if a<15: 					#why 15? we need to define n initialize constants n param
-    		self.f_school -= 1
-    	else:
-    		self.f_school += 1
+#     def updateFitness(self):
+#     	a = self.curr_weight
+#     	if a<15: 					#why 15? we need to define n initialize constants n param
+#     		self.f_school -= 1
+#     	else:
+#     		self.f_school += 1
 
-    		#idk what this is 
-    def checkfitnessswarm(self, f, n):
-    	z= 1
-    	if fswarm/n<w*n/2:
-    		z=0
+#     		#idk what this is 
+#     def checkfitnessswarm(self, f, n):
+#     	z= 1
+#     	if fswarm/n<w*n/2:
+#     		z=0
 
-    #school of fish should be a bin maxHeap with fish W as the key      
-    def updateBestFish(x): 
+#     #school of fish should be a bin maxHeap with fish W as the key      
+#     def updateBestFish(x): 
 
-    #basically heapify the new fish school list
-    	pass
+#     #basically heapify the new fish school list
+#     	pass
 
-    def updateBarycenter(self):
-    	self.barycenter = [0 for _ in range(self.dim)] 
-    	for i in range(self.size):
-    		for j in range(self.dim):
-    			self.barycenter[j] += (self.school[i][j]*self.school[i].W)/self.curr_weight
-=======
+#     def updateBarycenter(self):
+#     	self.barycenter = [0 for _ in range(self.dim)] 
+#     	for i in range(self.size):
+#     		for j in range(self.dim):
+#     			self.barycenter[j] += (self.school[i][j]*self.school[i].W)/self.curr_weight
+
 #import check_constraints as strain
 class Fish:
 	def __init__(self, dim, x, w, fun):
@@ -165,7 +164,6 @@ class Fish:
 	
 
 
->>>>>>> ce2a1cc... Update Fish class Add operators and fitness function
 
 
 
