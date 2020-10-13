@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 
 # vanilla FSS (this algorithm is used for continuous optimization problems)
@@ -261,7 +261,7 @@ def main():
     #     f1.displace_ind(step_indiv)
     #     f1.update_fitness()
     #     f1.feed((f1.f - f1.f_prev), w_scale)
-    s = School(5, 2, 40.0, testFunction1, 3.0, 2.0)
+    s = School(30, 2, 40.0, testFunction1, 3.0, 2.0)
     s.init_fish_school()
     for i in range(0,T):
         s.update_school()
