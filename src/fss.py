@@ -33,7 +33,7 @@ class School(object):
 
 
     def init_fish_school(self):
-        self.school = [(Fish(self.dim, generateRandList(self.dim, -100, 100), self.w_scale/2, testFunction1)) for _ in range(self.size)]
+        self.school = [(Fish(self.dim, generateRandList(self.dim, -100, 100), self.w_scale/2, self.objective)) for _ in range(self.size)]
 
 
     def print_school_info(self):
@@ -248,6 +248,16 @@ def testFunction1(X):
     else:
         return None
 
+#Bimodal bell like Curve
+#FSS is unable to approximate multimodal function optimal points
+#global maxima @ (-2.0,0.0)
+#local maxima @ (0.0,0.0)
+def testFunction2(X):
+    if isinstance(X, np.ndarray):
+        return math.exp(-(X[0]*X[0] + X[1]*X[1])) + 3*math.exp(-(((X[0]+10)*(X[0]+10) + X[1]*X[1])))
+    else:
+        return None
+
 # small test for Fish class
 # its performing quite well even with only individual displace component and 1 fish
 # Solutions produced are quite close to (-5.0, 0)
@@ -268,7 +278,7 @@ def main():
     wscale = float(input('Enter w_scale:'))     #default = 40.0
     stepind = float(input('Enter step_ind:'))   #default = 2.5 
     stepvol = float(input('Enter step_vol:'))   #default = 2.5
-    print('Running Tests')
+    print('Running Test 1')
     print('Test default: Bivariate Bell Curve')
     print('y = exp(-((x + 5)^ 2 + y^ 2))')
     print('Optimization to do: Maximization')
