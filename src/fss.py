@@ -10,6 +10,7 @@
 import numpy as np
 #import copy
 import random
+import time
 import math
 # import check_constraints as strain
 
@@ -32,7 +33,7 @@ class School(object):
 
 
     def init_fish_school(self):
-        self.school = [(Fish(self.dim, generateRandList(self.dim, -30,31), self.w_scale/2, testFunction1)) for _ in range(self.size)]
+        self.school = [(Fish(self.dim, generateRandList(self.dim, -100, 100), self.w_scale/2, testFunction1)) for _ in range(self.size)]
 
 
     def print_school_info(self):
@@ -58,9 +59,9 @@ class School(object):
             i.feed(self.del_f_max, self.w_scale)
         #for each fish Perform the collective instinctive displacement
         #for that calculate the col ins disp vector == col ins disp
-        self.update_col_ins_vec()
+        self.update_col_ins_vec() # eqn 5
         for i in self.school:
-            i.displace_col_ins(self.col_ins_disp)
+            i.displace_col_ins(self.col_ins_disp) # x = x + m
         #for each fish Perform the collective volitive displacement
         #for that update school's barycenter
         self.update_barycenter()
@@ -110,7 +111,7 @@ class School(object):
         for i in self.school:
             self.barycenter += i.W * i.X
         self.barycenter *= 1/self.curr_weight
-        print(self.barycenter)
+        #print(self.barycenter)
 
 
     def update_school_w(self):
@@ -118,7 +119,7 @@ class School(object):
         self.curr_weight = 0.0
         for i in self.school:
             self.curr_weight += i.W
-        print(self.curr_weight)
+        #print(self.curr_weight)
         
             
 
@@ -137,6 +138,7 @@ class Fish:
         self.y_prev = self.objective(self.X_prev)
 
     def displace_ind(self, step_ind):
+        # try individual
         m = np.copy(self.X)
         with np.nditer(m, op_flags=['readwrite']) as it:
             for x in it:
@@ -225,7 +227,7 @@ def generateRandList(dim, lower, upper, constraints=None):
     # we need to change the dtype of X from int to float here
     X = np.random.rand(dim)
     X = (X * (upper-lower)) + lower
-    print(X)
+    #print(X)
     # and some generation magic here possibly by partially solving the system of Lin. inequalities
     return X
 
@@ -238,6 +240,7 @@ def get_euclidean_dist(n1, n2):
 
 # TEST Functions == Objective functions to be optimized
 # test function 1 = bell curve = exp(-((x+5)^2+y^2))
+# type : Unimodal 3D curve
 # global maxima is at (-5.0, 0)
 def testFunction1(X):
     if isinstance(X, np.ndarray):
@@ -256,16 +259,42 @@ def main():
     # step_indiv = 1.0
     # f1 = Fish(2, x1, w_scale/2, testFunction1)
     # f1.print_fish_status()
-    T = 30
-    # for i in range(0,T):
-    #     f1.displace_ind(step_indiv)
-    #     f1.update_fitness()
-    #     f1.feed((f1.f - f1.f_prev), w_scale)
-    s = School(30, 2, 40.0, testFunction1, 3.0, 2.0)
-    s.init_fish_school()
-    for i in range(0,T):
-        s.update_school()
-    s.print_school_info()
+    print('Fish School Search algorithm Simulation script')
+    R = int(input('Enter Number of Test runs:'))    #default = 6
+    T = int(input('Enter Number of Iterations per run:'))   #default = 10000
+    dim = 2
+    print('Input Algorithm Parameters:')
+    po = int(input('Enter population_size:'))   #default = 30
+    wscale = float(input('Enter w_scale:'))     #default = 40.0
+    stepind = float(input('Enter step_ind:'))   #default = 2.5 
+    stepvol = float(input('Enter step_vol:'))   #default = 2.5
+    print('Running Tests')
+    print('Test default: Bivariate Bell Curve')
+    print('y = exp(-((x + 5)^ 2 + y^ 2))')
+    print('Optimization to do: Maximization')
+    print('Solution status: Known')
+    known_sol = np.asarray([-5.0,0.0], dtype = float, order = 'C')
+    avg_sol = np.zeros(dim ,dtype = float, order = 'C')
+    error = np.zeros(dim ,dtype = float, order = 'C')
+    print('Known Solution:(-5.0, 0.0) global Maxima')
+    print('Running Test Simulation...')
+    start_time = time.time()
+    for j in range(0,R):
+        s = School(po, dim, wscale, testFunction1, stepind, stepvol)
+        s.init_fish_school()
+        for i in range(0,T):
+            s.update_school()
+        avg_sol += s.best_fish.X
+        error += np.abs(s.best_fish.X - known_sol)
+    avg_sol *= 1/R
+    error *= 1/R
+    taken_time = time.time() - start_time
+    print('Average Execution Time:')
+    print("--- %s seconds ---" % (taken_time/R))
+    print('Total Execution Time:')
+    print("--- %s seconds ---" % (taken_time))
+    print('Solution found using FSS = ', avg_sol)
+    print('Absolute Error = ', error)
     return 0
 
 
