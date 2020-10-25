@@ -134,12 +134,12 @@ class Fish:
         self.f_prev = 1.0
         self.del_f = 0.0
         self.objective = fun
-        self.y = self.objective(self.X)
+        self.y = self.objective(self.X) # y = f(x)
         self.y_prev = self.objective(self.X_prev)
 
     def displace_ind(self, step_ind):
         # try individual
-        m = np.copy(self.X)
+        m = np.copy(self.X) # temp X
         with np.nditer(m, op_flags=['readwrite']) as it:
             for x in it:
                 x[...] = x + step_ind * random.uniform(-1.0, 1.0)

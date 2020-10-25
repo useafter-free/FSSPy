@@ -36,25 +36,14 @@ parse them then check if certain X satisfies it or not
 
 """
 
-def check_constraints_linear(X, constraints):
-	if constraints == None or X == None:
-		return None 
-	for i in range(0,constraints.length()):
+def check_constraints_linear(X, coef, bounds):
+	for i in range(0,len(coef)):
 		linear_sum = 0
-		if(isinstance(constraints[i], list) == False or constraints[i].length != X.length):
-			print("Malformed Input")
-			return None
-		for j in range(0,X.length()):
-			linear_sum += linear_sum + constraints[i][j] * X[j]
-		if linear_sum > 0:
+		for j in range(0,X.size):
+			linear_sum += linear_sum + coef[i][j] * X[j]
+		if linear_sum > bounds[i]:
 			return False
 	return True
-
-def main():
-	# dat_file as input  --> dat_parser --> X and constraints
-	# but for since we dont have the parser we will just use manual input 
-	# or even lazier hard coded X and constraints 
-
 
 if __name__ == "__main__":
 	main()
