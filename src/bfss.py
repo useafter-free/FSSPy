@@ -5,34 +5,39 @@
 ###INCOMPLETE
 
 
-# vanilla FSS (this algorithm is used for continuous optimization problems)
-# tests: find global maxima of Bivariate bell curve (unbounded == no constraints)
-# chose Bell curves becoz they unimodular
-# Population = school size = 30
+
 
 
 import numpy as np
-#import copy
-from random import random,randint   
+import matplotlib.pyplot as plt
+from random import random,randint
+import copy   
 import time
 import math
 
 
 
 class School(object):
-    def __init__(self, problem, population_size, dim, wscale, objtve, step_ind, thresh_c, thresh_v):
+    def __init__(self, iter, problem, population_size, dim, objtve, step_ind, thresh_c, thresh_v):
         self.problem = problem
+        self.max_iter = iter
+        self.f_avg = 0.0
         self.size = population_size
-        self.w_scale = wscale
         self.dim = dim
+        self.w_scale = float(self.max_iter / self.dim)
+        print('W scale = ',self.w_scale)
         self.school = []
-        self.prev_weight = self.w_scale * self.size
-        self.curr_weight = self.w_scale * self.size
+        self.stats = np.zeros(self.max_iter, dtype=float, order='C')
+        self.prev_weight = self.w_scale/2 * self.size
+        self.curr_weight = self.w_scale/2 * self.size
         self.step_ind = step_ind
+        self.step_ind_init = step_ind
         self.thresh_c = thresh_c
         self.thresh_v = thresh_v
-        self.del_f_max = 0.0				#school fitness
-        self.best_fish = None 			
+        self.del_f_max = 0.0				#school max fitness gain
+        self.f_max = 0.0
+        self.best_fish = None
+        self.best_fish_global = None 			
         self.objective = objtve 			
         self.barycenter = np.zeros(self.dim ,dtype = float, order = 'C')
         self.col_ins_disp = np.zeros(self.dim ,dtype = float, order = 'C')
@@ -52,14 +57,16 @@ class School(object):
 
     #basically what happens in 1 iteration
     #follows directly from the FSS algorithm pseudocode
-    def update_school(self):
+    def update_school(self, iter):
         #for each fish Perform the individual displacement (Equation 1)
+        self.update_stats(iter)
         for i in self.school:
             i.displace_ind()
             #apply fitness function
             i.update_del_f()
             #i.print_fish_status()
         #update the best fish in school(according to current fitness)
+        self.update_del_f_max()
         self.update_best_fish()
         #for each fish Update its weight
         for i in self.school:
@@ -75,7 +82,31 @@ class School(object):
         for i in self.school:
             i.displace_col_vol()
             i.update_del_f()
+        #self.update_del_f_max()
         self.update_best_fish()
+        self.update_step_ind()
+    
+    def update_del_f_max(self):
+        max = 0
+        for i in range(0,self.size):
+            if self.school[i].del_f > self.school[max].del_f:
+                max = i
+        self.del_f_max = self.school[max].del_f
+    
+    def update_step_ind(self):
+        self.step_ind = self.step_ind - self.step_ind_init / self.max_iter
+    
+    def update_f_avg(self):
+        self.f_avg = 0.0
+        for i in range(0,self.size):
+            self.f_avg += self.school[i].f
+        self.f_avg /= self.size
+    def update_stats(self, iter):
+        self.update_f_avg()
+        self.stats[iter] = self.f_avg
+        #plt.plot(self.stats)
+        #plt.show()
+
 
 
     def update_col_ins_vec(self):
@@ -84,7 +115,7 @@ class School(object):
             sigma_del_f += i.del_f
         self.col_ins_disp.fill(0.0)
         for i in self.school:
-            self.col_ins_disp += i.del_f * (i.X - i.X_prev)
+            self.col_ins_disp += i.del_f * (i.X)    #important change instead of del x we use x itself
         if sigma_del_f:
             self.col_ins_disp *= 1/sigma_del_f
         else:
@@ -93,12 +124,19 @@ class School(object):
 
 
     def update_best_fish(self):
-        max = 0
+        max_curr = 0
+        max_global = -1
         for i in range(0,self.size):
-            if self.school[i].f > self.school[max].f:
-                max = i
-        self.best_fish = self.school[max] 
-        print(self.best_fish)
+            if self.school[i].f > self.f_max:
+                self.f_max = self.school[i].f
+                max_global = i
+            if self.school[i].f > self.school[max_curr].f:
+                max_curr = i
+        self.best_fish = self.school[max_curr] 
+        if(max_global >= 0):
+            self.best_fish_global = np.copy(self.school[max_global].X)
+        #print('Best Solution = ', self.best_fish_global, ' Best Fitness = ', self.f_max)
+        #print('Best Solution Current = ', self.best_fish.X, ' Current Best Fitness = ', self.best_fish.f)
 
 
     def update_barycenter(self):
@@ -114,6 +152,7 @@ class School(object):
                 self.barycenter[i] = 0
             else:
                 self.barycenter[i] = 1
+        #print(self.barycenter)
         
 
 
@@ -142,14 +181,15 @@ class Fish:
         for i in range(0,m.size):
             if(random() < self.school.step_ind):
                 m[i] = not m[i] 
+        if check_constraints_linear(m, self.school.problem.constraints, self.school.problem.bounds) == False:
+            self.displace_ind()
+            return
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f
-        if check_constraints_linear(m, self.school.problem.constraints, self.school.problem.bounds) == False:
-            return
         m_y = getObjective(m , self.school.objective)
         if m_y > self.f:
             self.f = m_y
-            self.X = m
+            np.copyto(self.X, m, casting='same_kind', where=True)
 
     def update_del_f(self):
         self.del_f = self.f - self.f_prev
@@ -160,6 +200,7 @@ class Fish:
         if(self.school.del_f_max):
            self.W += (self.del_f)/abs(self.school.del_f_max)
         self.W = min(self.W, self.school.w_scale)
+        #print(self.W)
 
     def displace_col_ins(self):
         max_m = np.amax(self.school.col_ins_disp)
@@ -169,11 +210,13 @@ class Fish:
             temp[d] = 0
         else:
             temp[d] = 1
+
+        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
+            self.displace_col_ins()
+            return
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f
-        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
-            return
-        self.X = temp
+        np.copyto(self.X, temp, casting='same_kind', where=True)
         self.f = getObjective(self.X, self.school.objective)
         
         
@@ -181,15 +224,17 @@ class Fish:
     def displace_col_vol(self):
         d = randint(0,self.school.dim - 1)
         temp = np.copy(self.X)
-        if(self.school.curr_weight - self.school.prev_weight > 0):
-            temp[d] = self.school.barycenter[d]
-        else:
-            temp[d] = not self.school.barycenter[d]
+        if temp[d] != self.school.barycenter[d]: #random bit that is not same is changed
+            if(self.school.curr_weight - self.school.prev_weight > 0):
+                temp[d] = self.school.barycenter[d]
+            else:
+                temp[d] = not self.school.barycenter[d]
+        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
+            self.displace_col_vol()
+            return
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f
-        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
-            return
-        self.X = temp
+        np.copyto(self.X, temp, casting='same_kind', where=True)
         self.f = getObjective(self.X, self.school.objective)
             
 
@@ -226,20 +271,21 @@ class Solver:
         self.step_ind = step_ind
         self.thresh_c = thresh_c
         self.thresh_v = thresh_v
-        self.school = School(self.problem, self.population, self.problem.dim, self.w_scale, self.problem.objective, self.step_ind, self.thresh_c, self.thresh_v)
+        self.school = School(self.T, self.problem, self.population, self.problem.dim, self.problem.objective, self.step_ind, self.thresh_c, self.thresh_v)
 
 
-
+class Stats:
+    pass
 # HELPER FUNCTIONS
+
+#this function affects solution quality
 def mutateBinSeq(dim, X):
-    
-    rand_start = randint(0,dim-1)
-    for i in range(rand_start,dim):
-        if(X[i] == 0):
-            X[i] = 1
-        else:
-            X[i] = 0
-    print('Mutation occured ', type(X))
+    d = randint(0,dim-1)
+    if(X[d] == 0):
+        X[d] = 1
+    else:
+        X[d] = 0
+    #print('Mutation occured ', type(X))
 
 def generateRandBinSeq(dim, constraints=None, bounds=None):
     # we need to change the dtype of X from int to float here
@@ -249,9 +295,9 @@ def generateRandBinSeq(dim, constraints=None, bounds=None):
         if(random() >= 0.5):
             X[i] = 1
     while(check_constraints_linear(X, constraints, bounds) == False):
-        print('X before mutation ', X)
+        #print('X before mutation ', X)
         mutateBinSeq(dim, X)
-        print('X after mutation ', X)
+        #print('X after mutation ', X)
 
     return X
 
@@ -273,18 +319,24 @@ def check_constraints_linear(X, coef, bounds):
 
 
 def main():
-    obj = np.asarray([1,2,3], dtype=int)
-    constr = [np.asarray([1,0,1]), np.asarray([0,1,1])]
-    bound = [1,2]
-    p = Problem(True, 3, False, obj, 2, constr, bound, 0, False)
-    s = Solver(1, 5, p, 5, 30.0, 0.5, 0.4 ,0.4)
+    obj = np.asarray([1,2,3,3,3,2,1,6,1,2], dtype=int)
+    constr = [np.asarray([1,1,1,1,1,1,1,2,1,3]), np.asarray([0,1,1,2,0,0,0,0,0,0])]
+    bound = [5,4]
+    dim = 10
+    T = 1000
+    p = Problem(True, dim, False, obj, 2, constr, bound, 0, False)
+    s = Solver(1, T, p, 10, 40.0, 0.5, 0.4 ,0.4)
     s.school.init_fish_school()
-    for c in range(0,100):
-        print('iteration = ', c)
-        print('best fish = ', s.school.best_fish.X, ' fitness = ', s.school.best_fish.f)
-        for i in range(0,s.school.size):
-            print(s.school.school[i].X,' ', check_constraints_linear(s.school.school[i].X, s.problem.constraints, s.problem.bounds))
-            s.school.update_school()
+    for c in range(0,T):
+        s.school.update_school(c)
+        #print('Iteration = ', c)
+        #for i in range(0,s.school.size):
+        #    print(s.school.school[i].X,' ', check_constraints_linear(s.school.school[i].X, s.problem.constraints, s.problem.bounds))
+        
+    plt.plot(s.school.stats)
+    plt.show()
+
+
 
     
 
