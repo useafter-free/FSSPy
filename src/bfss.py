@@ -334,6 +334,8 @@ def main():
         #    print(s.school.school[i].X,' ', check_constraints_linear(s.school.school[i].X, s.problem.constraints, s.problem.bounds))
         
     plt.plot(s.school.stats)
+    plt.ylabel('Average Fitness')
+    plt.xlabel('No. of iterations(t)')
     plt.show()
 
 
