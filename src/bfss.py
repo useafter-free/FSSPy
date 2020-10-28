@@ -14,6 +14,8 @@ from random import random,randint
 import copy   
 import time
 import math
+from Problem import Problem
+import dat_parser as parser
 
 
 
@@ -181,11 +183,10 @@ class Fish:
         for i in range(0,m.size):
             if(random() < self.school.step_ind):
                 m[i] = not m[i] 
-        if check_constraints_linear(m, self.school.problem.constraints, self.school.problem.bounds) == False:
-            self.displace_ind()
-            return
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f
+        if check_constraints_linear(m, self.school.problem.constraints, self.school.problem.bounds) == False:
+            return
         m_y = getObjective(m , self.school.objective)
         if m_y > self.f:
             self.f = m_y
@@ -210,12 +211,10 @@ class Fish:
             temp[d] = 0
         else:
             temp[d] = 1
-
-        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
-            self.displace_col_ins()
-            return
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f
+        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
+            return
         np.copyto(self.X, temp, casting='same_kind', where=True)
         self.f = getObjective(self.X, self.school.objective)
         
@@ -229,11 +228,10 @@ class Fish:
                 temp[d] = self.school.barycenter[d]
             else:
                 temp[d] = not self.school.barycenter[d]
-        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
-            self.displace_col_vol()
-            return
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
-        self.f_prev = self.f
+        self.f_prev = self.f        
+        if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
+            return
         np.copyto(self.X, temp, casting='same_kind', where=True)
         self.f = getObjective(self.X, self.school.objective)
             
@@ -248,26 +246,15 @@ class Fish:
         print("y = ", self.y)
         print("y prev = ", self.y_prev)
 
-class Problem:
-    def __init__(self, discrt, dim, minim, objtve, M, constrnt, bounds, optim=0, solved=False):
-        self.discrete = discrt
-        self.dim = dim
-        self.minimize = minim
-        self.objective = objtve
-        self.n_constraint = M
-        self.constraints = constrnt
-        self.bounds = bounds
-        self.optima = optim
-        self.solved = solved
         
 class Solver:
-    def __init__(self, runs, iterations, problem, population_size, w_scale, step_ind, thresh_c, thresh_v):
+    def __init__(self, runs, iterations, problem, population_size, step_ind, thresh_c, thresh_v):
         self.runs = runs
         self.T = iterations
         self.t = 0  #current interation
         self.problem = problem
         self.population = population_size
-        self.w_scale = w_scale
+        #self.w_scale = w_scale
         self.step_ind = step_ind
         self.thresh_c = thresh_c
         self.thresh_v = thresh_v
@@ -279,13 +266,6 @@ class Stats:
 # HELPER FUNCTIONS
 
 #this function affects solution quality
-def mutateBinSeq(dim, X):
-    d = randint(0,dim-1)
-    if(X[d] == 0):
-        X[d] = 1
-    else:
-        X[d] = 0
-    #print('Mutation occured ', type(X))
 
 def generateRandBinSeq(dim, constraints=None, bounds=None):
     # we need to change the dtype of X from int to float here
@@ -294,11 +274,16 @@ def generateRandBinSeq(dim, constraints=None, bounds=None):
     for i in range(0, X.size):
         if(random() >= 0.5):
             X[i] = 1
+    d = randint(0,dim-1)
     while(check_constraints_linear(X, constraints, bounds) == False):
         #print('X before mutation ', X)
-        mutateBinSeq(dim, X)
+        if(X[d] == 1):
+            X[d] = 0
+        d += 1
+        if(d >= dim):
+            d = 0
         #print('X after mutation ', X)
-
+    #print(X)
     return X
 
 def getObjective(X, objective):
@@ -319,25 +304,40 @@ def check_constraints_linear(X, coef, bounds):
 
 
 def main():
-    obj = np.asarray([1,2,3,3,3,2,1,6,1,2], dtype=int)
-    constr = [np.asarray([1,1,1,1,1,1,1,2,1,3]), np.asarray([0,1,1,2,0,0,0,0,0,0])]
-    bound = [5,4]
-    dim = 10
-    T = 1000
-    p = Problem(True, dim, False, obj, 2, constr, bound, 0, False)
-    s = Solver(1, T, p, 10, 40.0, 0.5, 0.4 ,0.4)
+    # obj = np.asarray([1,2,3,3,3,2,1,6,1,2], dtype=int)
+    # constr = [np.asarray([1,1,1,1,1,1,1,2,1,3]), np.asarray([0,1,1,2,0,0,0,0,0,0])]
+    # bound = [5,4]
+    # dim = 10    
+    # p = Problem(True, dim, False, obj, 2, constr, bound, 0, False)
+    f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
+    p = parser.parse_single_instance(f_path)
+    print(p.bounds)
+    T = 10000
+    pop = 30
+    s = Solver(1, T, p, pop, 0.5, 0.4 ,0.4)
+    init_time = time.time()
     s.school.init_fish_school()
+    init_time = time.time() - init_time
+    print('Initialization completed')
+    print('Time taken to initialize = ', init_time, ' seconds')
+    print('Population = ', pop)
+    print('Dimensions = ', p.dim)
+    print('No. of constraints = ', p.n_constraint)
+    print('Max Iterations = ', T)
+    print('Running Simulation...')
+    simu_time = time.time()
     for c in range(0,T):
         s.school.update_school(c)
-        #print('Iteration = ', c)
-        #for i in range(0,s.school.size):
-        #    print(s.school.school[i].X,' ', check_constraints_linear(s.school.school[i].X, s.problem.constraints, s.problem.bounds))
-        
+    simu_time = time.time() - simu_time
+    print('Algorithm run time = ', simu_time, ' seconds')
+    print('Best Solution = ', s.school.best_fish_global)
+    print('Best Fitness = ', s.school.f_max)
+    print('Average Fitness = ', s.school.f_avg)
+    print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
     plt.plot(s.school.stats)
     plt.ylabel('Average Fitness')
     plt.xlabel('No. of iterations(t)')
     plt.show()
-
 
 
     
