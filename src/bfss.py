@@ -4,32 +4,33 @@
 
 ###INCOMPLETE
 
-
-
-
-
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
+#from mpl_toolkits.mplot3d import Axes3D
 from random import random,randint
 import copy   
 import time
 import math
 from Problem import Problem
 import dat_parser as parser
-
+from colour import Color
 
 
 class School(object):
     def __init__(self, iter, problem, population_size, dim, objtve, step_ind, thresh_c, thresh_v):
         self.problem = problem
         self.max_iter = iter
+        self.curr_iter = 0
         self.f_avg = 0.0
         self.size = population_size
         self.dim = dim
         self.w_scale = float(self.max_iter / self.dim)
         print('W scale = ',self.w_scale)
         self.school = []
-        self.stats = np.zeros(self.max_iter, dtype=float, order='C')
+        self.plot_data_xy = np.ndarray((self.max_iter * self.size,2),dtype=float)
+        #self.stats = np.zeros(self.max_iter, dtype=float, order='C')
         self.prev_weight = self.w_scale/2 * self.size
         self.curr_weight = self.w_scale/2 * self.size
         self.step_ind = step_ind
@@ -38,6 +39,7 @@ class School(object):
         self.thresh_v = thresh_v
         self.del_f_max = 0.0				#school max fitness gain
         self.f_max = 0.0
+        self.f_min = 0.0
         self.best_fish = None
         self.best_fish_global = None 			
         self.objective = objtve 			
@@ -59,35 +61,50 @@ class School(object):
 
     #basically what happens in 1 iteration
     #follows directly from the FSS algorithm pseudocode
-    def update_school(self, iter):
+    def update_school(self):
         #for each fish Perform the individual displacement (Equation 1)
-        self.update_stats(iter)
-        for i in self.school:
-            i.displace_ind()
-            #apply fitness function
-            i.update_del_f()
-            #i.print_fish_status()
-        #update the best fish in school(according to current fitness)
-        self.update_del_f_max()
-        self.update_best_fish()
-        #for each fish Update its weight
-        for i in self.school:
-            i.feed()
-        #for each fish Perform the collective instinctive displacement
-        #for that calculate the col ins disp vector == col ins disp
-        self.update_col_ins_vec() # eqn 5
-        for i in self.school:
-            i.displace_col_ins() # x = x + m
-        #for each fish Perform the collective volitive displacement
-        #for that update school's barycenter
-        self.update_barycenter()
-        for i in self.school:
-            i.displace_col_vol()
-            i.update_del_f()
-        #self.update_del_f_max()
-        self.update_best_fish()
-        self.update_step_ind()
-    
+        #self.update_stats(iter)
+        while self.curr_iter < self.max_iter:
+            self.update_plotdata()
+            for i in self.school:
+                i.displace_ind()
+                #apply fitness function
+                i.update_del_f()
+                #i.print_fish_status()
+            #update the best fish in school(according to current fitness)
+            self.update_del_f_max()
+            self.update_best_fish()
+            #for each fish Update its weight
+            for i in self.school:
+                i.feed()
+            #for each fish Perform the collective instinctive displacement
+            #for that calculate the col ins disp vector == col ins disp
+            self.update_col_ins_vec() # eqn 5
+            for i in self.school:
+                i.displace_col_ins() # x = x + m
+            #for each fish Perform the collective volitive displacement
+            #for that update school's barycenter
+            self.update_barycenter()
+            for i in self.school:
+                i.displace_col_vol()
+                i.update_del_f()
+            #self.update_del_f_max()
+            self.update_best_fish()
+            self.update_step_ind()
+            self.curr_iter += 1
+        
+    def update_plotdata(self):
+        #print(self.plot_data.shape)
+        for i in range(0,self.size):
+            nb = binaryseqtoi(self.school[i].X,self.dim)
+            #theta = (2*math.pi/self.size) * i
+            if nb == 0:
+                radius = 0
+            else:
+                radius = math.log2(nb)
+            self.plot_data_xy[self.curr_iter * self.size + i, 0] = radius
+            self.plot_data_xy[self.curr_iter * self.size + i, 1] = self.school[i].f
+
     def update_del_f_max(self):
         max = 0
         for i in range(0,self.size):
@@ -103,11 +120,11 @@ class School(object):
         for i in range(0,self.size):
             self.f_avg += self.school[i].f
         self.f_avg /= self.size
-    def update_stats(self, iter):
-        self.update_f_avg()
-        self.stats[iter] = self.f_avg
-        #plt.plot(self.stats)
-        #plt.show()
+    # def update_stats(self, iter):
+    #     self.update_f_avg()
+    #     self.stats[iter] = self.f_avg
+    #     #plt.plot(self.stats)
+    #     #plt.show()
 
 
 
@@ -236,15 +253,15 @@ class Fish:
         self.f = getObjective(self.X, self.school.objective)
             
 
-    # debug functions
-    def print_fish_status(self):
-        print("X = ", self.X)
-        print("X prev = ", self.X_prev)
-        print("Weight = ", self.W)
-        print("fitness = ", self.f)
-        print("Prev fitness = ", self.f_prev)
-        print("y = ", self.y)
-        print("y prev = ", self.y_prev)
+    # # debug functions
+    # def print_fish_status(self):
+    #     print("X = ", self.X)
+    #     print("X prev = ", self.X_prev)
+    #     print("Weight = ", self.W)
+    #     print("fitness = ", self.f)
+    #     print("Prev fitness = ", self.f_prev)
+    #     print("y = ", self.y)
+    #     print("y prev = ", self.y_prev)
 
         
 class Solver:
@@ -268,8 +285,8 @@ class Stats:
 #this function affects solution quality
 
 def generateRandBinSeq(dim, constraints=None, bounds=None):
-    # we need to change the dtype of X from int to float here
-    X = np.zeros(dim, dtype=int, order='C')
+    # we need to change the dtype of X from int to uint
+    X = np.zeros(dim, dtype=np.uint8, order='C')
     #print(X.size)
     for i in range(0, X.size):
         if(random() >= 0.5):
@@ -289,6 +306,15 @@ def generateRandBinSeq(dim, constraints=None, bounds=None):
 def getObjective(X, objective):
     return X.dot(objective)         #assuming it will return their inner product
 
+def binaryseqtoi(bin_arr, len):
+    num = 0
+    #print(type(bin_arr[0].item())) # numpy dtypes suck
+    for i in range(len-1,-1,-1):
+        num = num * 2 + bin_arr[i].item()
+        #print(int(bin_arr[i]))
+    #print(num)
+    return num
+
 
 def get_euclidean_dist(n1, n2):
     n3 = n1 - n2
@@ -302,50 +328,49 @@ def check_constraints_linear(X, coef, bounds):
             return False
     return True
 
-
-def main():
-    # obj = np.asarray([1,2,3,3,3,2,1,6,1,2], dtype=int)
-    # constr = [np.asarray([1,1,1,1,1,1,1,2,1,3]), np.asarray([0,1,1,2,0,0,0,0,0,0])]
-    # bound = [5,4]
-    # dim = 10    
-    # p = Problem(True, dim, False, obj, 2, constr, bound, 0, False)
-    f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
-    p = parser.parse_single_instance(f_path)
-    print(p.bounds)
-    T = 10000
-    pop = 30
-    s = Solver(1, T, p, pop, 0.5, 0.4 ,0.4)
-    init_time = time.time()
-    s.school.init_fish_school()
-    init_time = time.time() - init_time
-    print('Initialization completed')
-    print('Time taken to initialize = ', init_time, ' seconds')
-    print('Population = ', pop)
-    print('Dimensions = ', p.dim)
-    print('No. of constraints = ', p.n_constraint)
-    print('Max Iterations = ', T)
-    print('Running Simulation...')
-    simu_time = time.time()
-    for c in range(0,T):
-        s.school.update_school(c)
-    simu_time = time.time() - simu_time
-    print('Algorithm run time = ', simu_time, ' seconds')
-    print('Best Solution = ', s.school.best_fish_global)
-    print('Best Fitness = ', s.school.f_max)
-    print('Average Fitness = ', s.school.f_avg)
-    print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
-    plt.plot(s.school.stats)
-    plt.ylabel('Average Fitness')
-    plt.xlabel('No. of iterations(t)')
-    plt.show()
+###For animation
 
 
-    
+def animate(i,data):
+    scat.set_offsets(data[i*pop:(i+1)*pop,:])
+    return scat,
 
-    return 0
-
-
-
-if __name__ == "__main__":
-    main()
+f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
+p = parser.parse_single_instance(f_path)
+print(p.bounds)
+T = 10000
+pop = 30
+s = Solver(1, T, p, pop, 0.5, 0.4 ,0.4)
+init_time = time.time()
+s.school.init_fish_school()
+init_time = time.time() - init_time
+print('Initialization completed')
+print('Time taken to initialize = ', init_time, ' seconds')
+print('Population = ', pop)
+print('Dimensions = ', p.dim)
+print('No. of constraints = ', p.n_constraint)
+print('Max Iterations = ', T)
+print('Running Simulation...')
+simu_time = time.time()
+s.school.update_school()
+simu_time = time.time() - simu_time
+print('Algorithm run time = ', simu_time, ' seconds')
+print('Best Solution = ', s.school.best_fish_global)
+print('Best Fitness = ', s.school.f_max)
+print('Average Fitness = ', s.school.f_avg)
+print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
+fig = plt.figure()
+# plot_color_offset = Color('yellow')
+# colors_in_plot = list(plot_color_offset.range_to(Color("violet"),T))
+# colors = []
+# for i in range(0,T):
+#     for j in range(0,pop):
+#         colors.append(colors_in_plot[i].hex)
+Writer = animation.writers['ffmpeg']
+writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+ax = plt.axes(xlim=(0, s.school.dim*2), ylim=(np.amin(s.school.plot_data_xy[:, 0]),np.amax(s.school.plot_data_xy[:, 1])*2))
+scat = ax.scatter(x=s.school.plot_data_xy[0:pop,0],y=s.school.plot_data_xy[0:pop,1],marker='.')
+anim = FuncAnimation(fig, animate, fargs=(s.school.plot_data_xy,),frames=T, blit=True,cache_frame_data=False)
+anim.save('plot_animation.mp4', writer=writer)
+print('Saved animation!')
 
