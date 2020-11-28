@@ -360,12 +360,6 @@ print('Best Fitness = ', s.school.f_max)
 print('Average Fitness = ', s.school.f_avg)
 print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
 fig = plt.figure()
-# plot_color_offset = Color('yellow')
-# colors_in_plot = list(plot_color_offset.range_to(Color("violet"),T))
-# colors = []
-# for i in range(0,T):
-#     for j in range(0,pop):
-#         colors.append(colors_in_plot[i].hex)
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
 ax = plt.axes(xlim=(0, s.school.dim*2), ylim=(np.amin(s.school.plot_data_xy[:, 0]),np.amax(s.school.plot_data_xy[:, 1])*2))
