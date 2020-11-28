@@ -18,8 +18,8 @@ import dat_parser as parser
 from colour import Color
 
 
-class School(object):
-    def __init__(self, iter, problem, population_size, dim, objtve, step_ind, thresh_c, thresh_v):
+class School2(object):
+    def __init__(self, iter, problem, population_size, dim, objtve):
         self.problem = problem
         self.max_iter = iter
         self.curr_iter = 0
@@ -33,10 +33,6 @@ class School(object):
         #self.stats = np.zeros(self.max_iter, dtype=float, order='C')
         self.prev_weight = self.w_scale/2 * self.size
         self.curr_weight = self.w_scale/2 * self.size
-        self.step_ind = step_ind
-        self.step_ind_init = step_ind
-        self.thresh_c = thresh_c
-        self.thresh_v = thresh_v
         self.del_f_max = 0.0				#school max fitness gain
         self.f_max = 0.0
         self.f_min = 0.0
@@ -44,11 +40,10 @@ class School(object):
         self.best_fish_global = None 			
         self.objective = objtve 			
         self.barycenter = np.zeros(self.dim ,dtype = float, order = 'C')
-        self.col_ins_disp = np.zeros(self.dim ,dtype = float, order = 'C')
 
 
     def init_fish_school(self):
-        self.school = [ Fish(self, generateRandBinSeq(self.dim, self.problem.constraints, self.problem.bounds) ) for _ in range(0,self.size)]
+        self.school = [ Fish2(self, generateRandBinSeq(self.dim, self.problem.constraints, self.problem.bounds) ) for _ in range(0,self.size)]
         self.update_best_fish()
 
 
@@ -114,7 +109,6 @@ class School(object):
                 i.update_del_f()
             #self.update_del_f_max()
             self.update_best_fish()
-            self.update_step_ind()
             self.curr_iter += 1
         
     def update_plotdata(self):
@@ -135,36 +129,12 @@ class School(object):
             if self.school[i].del_f > self.school[max].del_f:
                 max = i
         self.del_f_max = self.school[max].del_f
-    
-    def update_step_ind(self):
-        self.step_ind = self.step_ind - self.step_ind_init / self.max_iter
-    
+        
     def update_f_avg(self):
         self.f_avg = 0.0
         for i in range(0,self.size):
             self.f_avg += self.school[i].f
         self.f_avg /= self.size
-    # def update_stats(self, iter):
-    #     self.update_f_avg()
-    #     self.stats[iter] = self.f_avg
-    #     #plt.plot(self.stats)
-    #     #plt.show()
-
-
-
-    def update_col_ins_vec(self):
-        sigma_del_f = 0.0
-        for i in self.school:
-            sigma_del_f += i.del_f
-        self.col_ins_disp.fill(0.0)
-        for i in self.school:
-            self.col_ins_disp += i.del_f * (i.X)    #important change instead of del x we use x itself
-        if sigma_del_f:
-            self.col_ins_disp *= 1/sigma_del_f
-        else:
-            self.col_ins_disp.fill(0.0)
-        
-
 
     def update_best_fish(self):
         max_curr = 0
@@ -178,9 +148,6 @@ class School(object):
         self.best_fish = self.school[max_curr] 
         if(max_global >= 0):
             self.best_fish_global = np.copy(self.school[max_global].X)
-        #print('Best Solution = ', self.best_fish_global, ' Best Fitness = ', self.f_max)
-        #print('Best Solution Current = ', self.best_fish.X, ' Current Best Fitness = ', self.best_fish.f)
-
 
     def update_barycenter(self, D):
         self.update_school_w()
@@ -197,21 +164,6 @@ class School(object):
                 self.barycenter[d] = 1
             else:
                 self.barycenter[d] = 0
-        
-
-        # for i in self.school:
-        #     self.barycenter += i.W * i.X
-        # self.barycenter *= 1/self.curr_weight
-        # #convert to binary coords
-        # max_b = np.amax(self.barycenter)
-        # for i in range(0,self.dim):
-        #     if(self.barycenter[i] < self.thresh_v * max_b):
-        #         self.barycenter[i] = 0
-        #     else:
-        #         self.barycenter[i] = 1
-        #print(self.barycenter)
-        
-
 
     def update_school_w(self):
         self.prev_weight = self.curr_weight
@@ -219,10 +171,7 @@ class School(object):
         for i in self.school:
             self.curr_weight += i.W
         
-            
-
-#step_ind = [0.0,1.0], thresh = [0.0,1.0)
-class Fish:
+class Fish2:
     def __init__(self, school, x):
         self.school = school
         self.X = x
@@ -256,10 +205,8 @@ class Fish:
         if(self.school.del_f_max):
            self.W += (self.del_f)/abs(self.school.del_f_max)
         self.W = min(self.W, self.school.w_scale)
-        #print(self.W)
-
+        
     def displace_col_ins(self,D,bit):
-        #max_m = np.amax(self.school.col_ins_disp)
         temp = np.copy(self.X) # temp X
         for d in D:
             temp[d] = bit
@@ -268,10 +215,8 @@ class Fish:
         if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
             return
         np.copyto(self.X, temp, casting='same_kind', where=True)
-        self.f = getObjective(self.X, self.school.objective)
-        
-        
-        
+        self.f = getObjective(self.X, self.school.objective)        
+
     def displace_col_vol(self, D):
         temp = np.copy(self.X)
         for d in D:
@@ -287,22 +232,15 @@ class Fish:
         np.copyto(self.X, temp, casting='same_kind', where=True)
         self.f = getObjective(self.X, self.school.objective)
         
-class Solver:
-    def __init__(self, runs, iterations, problem, population_size, step_ind, thresh_c, thresh_v):
+class Solver2:
+    def __init__(self, runs, iterations, problem, population_size):
         self.runs = runs
         self.T = iterations
         self.t = 0  #current interation
         self.problem = problem
         self.population = population_size
-        #self.w_scale = w_scale
-        self.step_ind = step_ind
-        self.thresh_c = thresh_c
-        self.thresh_v = thresh_v
-        self.school = School(self.T, self.problem, self.population, self.problem.dim, self.problem.objective, self.step_ind, self.thresh_c, self.thresh_v)
+        self.school = School2(self.T, self.problem, self.population, self.problem.dim, self.problem.objective)
 
-
-class Stats:
-    pass
 # HELPER FUNCTIONS
 
 #this function affects solution quality
@@ -364,9 +302,9 @@ p = parser.parse_single_instance(f_path)
 print(p.bounds)
 T = 10000
 pop = 30
-s = Solver(1, T, p, pop, 0.5, 0.4 ,0.4)
+s2 = Solver2(1, T, p, pop)
 init_time = time.time()
-s.school.init_fish_school()
+s2.school.init_fish_school()
 init_time = time.time() - init_time
 print('Initialization completed')
 print('Time taken to initialize = ', init_time, ' seconds')
@@ -376,19 +314,19 @@ print('No. of constraints = ', p.n_constraint)
 print('Max Iterations = ', T)
 print('Running Simulation...')
 simu_time = time.time()
-s.school.update_school()
+s2.school.update_school()
 simu_time = time.time() - simu_time
 print('Algorithm run time = ', simu_time, ' seconds')
-print('Best Solution = ', s.school.best_fish_global)
-print('Best Fitness = ', s.school.f_max)
-print('Average Fitness = ', s.school.f_avg)
-print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
-fig = plt.figure()
-Writer = animation.writers['ffmpeg']
-writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
-ax = plt.axes(xlim=(0, s.school.dim*2), ylim=(np.amin(s.school.plot_data_xy[:, 0]),np.amax(s.school.plot_data_xy[:, 1])*2))
-scat = ax.scatter(x=s.school.plot_data_xy[0:pop,0],y=s.school.plot_data_xy[0:pop,1],marker='.')
-anim = FuncAnimation(fig, animate, fargs=(s.school.plot_data_xy,),frames=T, blit=True,cache_frame_data=False)
-anim.save('plot_animation_simplified.mp4', writer=writer)
-print('Saved animation!')
+print('Best Solution = ', s2.school.best_fish_global)
+print('Best Fitness = ', s2.school.f_max)
+print('Average Fitness = ', s2.school.f_avg)
+print(check_constraints_linear(s2.school.best_fish_global, s2.problem.constraints, s2.problem.bounds))
+# fig = plt.figure()
+# Writer = animation.writers['ffmpeg']
+# writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+# ax = plt.axes(xlim=(0, s.school.dim*2), ylim=(np.amin(s.school.plot_data_xy[:, 0]),np.amax(s.school.plot_data_xy[:, 1])*2))
+# scat = ax.scatter(x=s.school.plot_data_xy[0:pop,0],y=s.school.plot_data_xy[0:pop,1],marker='.')
+# anim = FuncAnimation(fig, animate, fargs=(s.school.plot_data_xy,),frames=T, blit=True,cache_frame_data=False)
+# anim.save('plot_animation_simplified.mp4', writer=writer)
+# print('Saved animation!')
 
