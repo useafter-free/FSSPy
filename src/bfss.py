@@ -558,9 +558,9 @@ def check_constraints_linear(X, coef, bounds):
 
 
 def animate(i,data1,data2):
-    scat.set_offsets(data1[i*pop:(i+1)*pop,:])
-    scat.set_offsets(data2[i*pop:(i+1)*pop,:])
-    return scat,
+    scat[0].set_offsets(data1[i*pop:(i+1)*pop,:])
+    scat[1].set_offsets(data2[i*pop:(i+1)*pop,:])
+    return scat
 
 f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
 p = parser.parse_single_instance(f_path)
@@ -628,10 +628,11 @@ print(check_constraints_linear(s2.school.best_fish_global, s2.problem.constraint
 
 fig = plt.figure()
 Writer = animation.writers['ffmpeg']
-writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=-1)
 ax = plt.axes(xlim=(0, s.school.dim*2), ylim=(np.amin(s.school.plot_data_xy[:, 0]),np.amax(s.school.plot_data_xy[:, 1])*2))
-scat = ax.scatter(x=s.school.plot_data_xy[0:pop,0],y=s.school.plot_data_xy[0:pop,1],marker='.',c='blue',alpha=0.2)
-scat = ax.scatter(x=s2.school.plot_data_xy[0:pop,0],y=s2.school.plot_data_xy[0:pop,1],marker='.',c='red',alpha=0.2)
+scat1 = ax.scatter(x=s.school.plot_data_xy[0:pop,0],y=s.school.plot_data_xy[0:pop,1],marker='.',c='blue', alpha=0.5)
+scat2 = ax.scatter(x=s2.school.plot_data_xy[0:pop,0],y=s2.school.plot_data_xy[0:pop,1],marker='.',c='red', alpha=0.5)
+scat = [scat1,scat2]
 anim = FuncAnimation(fig, animate, fargs=(s.school.plot_data_xy,s2.school.plot_data_xy),frames=T, blit=True,cache_frame_data=False)
 anim.save('plot_animation.mp4', writer=writer)
 print('Saved animation!')
