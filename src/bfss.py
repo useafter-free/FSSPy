@@ -413,13 +413,13 @@ class School2(object):
         self.barycenter.fill(0)
         ones_weight = 0
         zero_weight = 0
-        for d in D:
+        for d in range(0,self.dim):
             for f in self.school:
                 if f.X[d] == 1:
                     ones_weight += f.W
                 elif f.X[d] == 0:
                     zero_weight += f.W
-            if ones_weight > zero_weight:
+            if ones_weight >= zero_weight:
                 self.barycenter[d] = 1
             else:
                 self.barycenter[d] = 0
@@ -479,10 +479,10 @@ class Fish2:
     def displace_col_vol(self, D):
         temp = np.copy(self.X)
         for d in D:
-            if temp[d] != self.school.barycenter[d]: #random bit that is not same is changed
-                if(self.school.curr_weight - self.school.prev_weight > 0):
+            # if temp[d] != self.school.barycenter[d]: #random bit that is not same is changed
+            if(self.school.curr_weight - self.school.prev_weight > 0):
                     temp[d] = self.school.barycenter[d]
-                else:
+            else:
                     temp[d] = not self.school.barycenter[d]
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f        
@@ -566,76 +566,80 @@ f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
 p = parser.parse_single_instance(f_path)
 print(p.bounds)
 T = 10000
+R = 6
 pop = 30
-s = Solver1(1, T, p, pop, 0.5, 0.4 ,0.4)
-init_time = time.time()
-s.school.init_fish_school()
-init_time = time.time() - init_time
-print('Initialization completed')
-print('Time taken to initialize = ', init_time, ' seconds')
-print('Population = ', pop)
-print('Dimensions = ', p.dim)
-print('No. of constraints = ', p.n_constraint)
-print('Max Iterations = ', T)
-print('Running Simulation...')
-simu_time = time.time()
-s.school.update_school()
-simu_time = time.time() - simu_time
-print('Algorithm run time = ', simu_time, ' seconds')
-print('Best Solution = ', s.school.best_fish_global)
-print('Best Fitness = ', s.school.f_max)
-print('Average Fitness = ', s.school.f_avg)
-print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
+avg_f_arr1 = np.zeros(T, dtype=float)
+avg_f_arr2 = np.zeros(T, dtype=float)
+for r in range(0,R):
+    print('Run = ',r+1)
+    s = Solver1(1, T, p, pop, 0.5, 0.4 ,0.4)
+    init_time = time.time()
+    s.school.init_fish_school()
+    init_time = time.time() - init_time
+    print('Initialization completed')
+    print('Time taken to initialize = ', init_time, ' seconds')
+    print('Population = ', pop)
+    print('Dimensions = ', p.dim)
+    print('No. of constraints = ', p.n_constraint)
+    print('Max Iterations = ', T)
+    print('Running Simulation...')
+    simu_time = time.time()
+    s.school.update_school()
+    simu_time = time.time() - simu_time
+    print('Algorithm run time = ', simu_time, ' seconds')
+    print('Best Solution = ', s.school.best_fish_global)
+    print('Best Fitness = ', s.school.f_max)
+    print('Average Fitness = ', s.school.f_avg)
+    print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
+    s2 = Solver2(1, T, p, pop)
+    init_time = time.time()
+    s2.school.init_fish_school()
+    init_time = time.time() - init_time
+    print('Initialization completed')
+    print('Time taken to initialize = ', init_time, ' seconds')
+    print('Population = ', pop)
+    print('Dimensions = ', p.dim)
+    print('No. of constraints = ', p.n_constraint)
+    print('Max Iterations = ', T)
+    print('Running Simulation...')
+    simu_time = time.time()
+    s2.school.update_school()
+    simu_time = time.time() - simu_time
+    print('Algorithm run time = ', simu_time, ' seconds')
+    print('Best Solution = ', s2.school.best_fish_global)
+    print('Best Fitness = ', s2.school.f_max)
+    print('Average Fitness = ', s2.school.f_avg)
+    print(check_constraints_linear(s2.school.best_fish_global, s2.problem.constraints, s2.problem.bounds))
 
+    for i in range(0,T):
+        avg_f_arr1[i] += np.amax(s.school.plot_data_xy[i*pop:(i+1)*pop,1])
 
-s2 = Solver2(1, T, p, pop)
-init_time = time.time()
-s2.school.init_fish_school()
-init_time = time.time() - init_time
-print('Initialization completed')
-print('Time taken to initialize = ', init_time, ' seconds')
-print('Population = ', pop)
-print('Dimensions = ', p.dim)
-print('No. of constraints = ', p.n_constraint)
-print('Max Iterations = ', T)
-print('Running Simulation...')
-simu_time = time.time()
-s2.school.update_school()
-simu_time = time.time() - simu_time
-print('Algorithm run time = ', simu_time, ' seconds')
-print('Best Solution = ', s2.school.best_fish_global)
-print('Best Fitness = ', s2.school.f_max)
-print('Average Fitness = ', s2.school.f_avg)
-print(check_constraints_linear(s2.school.best_fish_global, s2.problem.constraints, s2.problem.bounds))
-# avg_f_arr1 = np.ndarray(T, dtype=float)
-# for i in range(0,T):
-#     avg_f = 0.0
-#     for j in range(0,pop):
-#         avg_f += s.school.plot_data_xy[i * pop + j, 1]
-#     avg_f /= pop
-#     avg_f_arr1[i] = avg_f
-# avg_f_arr2 = np.ndarray(T, dtype=float)
-# for i in range(0,T):
-#     avg_f = 0.0
-#     for j in range(0,pop):
-#         avg_f += s2.school.plot_data_xy[i * pop + j, 1]
-#     avg_f /= pop
-#     avg_f_arr2[i] = avg_f
-# fig = plt.figure()
-# plt.plot(range(0,T), avg_f_arr1)
-# plt.plot(range(0,T), avg_f_arr2)
-# plt.show()
-
+    for i in range(0,T):
+        avg_f_arr2[i] += np.amax(s2.school.plot_data_xy[i*pop:(i+1)*pop,1])
+avg_f_arr1 /=R
+avg_f_arr2 /=R
+print(avg_f_arr1)
+print(avg_f_arr2)
 fig = plt.figure()
-Writer = animation.writers['ffmpeg']
-writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=-1)
-ax = plt.axes(xlim=(0, s.school.dim*2), ylim=(np.amin(s.school.plot_data_xy[:, 0]),np.amax(s.school.plot_data_xy[:, 1])*2))
-scat1 = ax.scatter(x=s.school.plot_data_xy[0:pop,0],y=s.school.plot_data_xy[0:pop,1],marker='.',c='blue', alpha=0.5)
-scat2 = ax.scatter(x=s2.school.plot_data_xy[0:pop,0],y=s2.school.plot_data_xy[0:pop,1],marker='.',c='red', alpha=0.5)
-scat = [scat1,scat2]
-anim = FuncAnimation(fig, animate, fargs=(s.school.plot_data_xy,s2.school.plot_data_xy),frames=T, blit=True,cache_frame_data=False)
-anim.save('plot_animation.mp4', writer=writer)
-print('Saved animation!')
+plt.scatter(range(0,T), avg_f_arr1)
+plt.scatter(range(0,T), avg_f_arr2)
+#plt.show()
+plt.savefig('bfss_sbfss_100x30.png')
+print('saved plot')
+#animation generator
+# fig = plt.figure()
+# Writer = animation.writers['ffmpeg']
+# writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=-1)
+# ax = plt.axes(xlim=(0, s.school.dim*2), ylim=(np.amin(s.school.plot_data_xy[:, 0]),np.amax(s.school.plot_data_xy[:, 1])*2))
+# scat1 = ax.scatter(x=s.school.plot_data_xy[0:pop,0],y=s.school.plot_data_xy[0:pop,1],marker='.',c='blue', alpha=0.5)
+# scat2 = ax.scatter(x=s2.school.plot_data_xy[0:pop,0],y=s2.school.plot_data_xy[0:pop,1],marker='.',c='red', alpha=0.5)
+# scat = [scat1,scat2]
+# anim = FuncAnimation(fig, animate, fargs=(s.school.plot_data_xy,s2.school.plot_data_xy),frames=T, blit=True,cache_frame_data=False)
+# anim.save('plot_animation.mp4', writer=writer)
+# print('Saved animation!')
+
+
+
 # fig = plt.figure()
 # Writer = animation.writers['ffmpeg']
 # writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
