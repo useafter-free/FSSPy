@@ -41,7 +41,8 @@ class School1(object):
         self.f_max = 0.0
         self.f_min = 0.0
         self.best_fish = None
-        self.best_fish_global = None 			
+        self.best_fish_global = None
+        self.f_max_plot = np.zeros(self.max_iter ,dtype = float, order = 'C') 			
         self.objective = objtve 			
         self.barycenter = np.zeros(self.dim ,dtype = float, order = 'C')
         self.col_ins_disp = np.zeros(self.dim ,dtype = float, order = 'C')
@@ -90,6 +91,7 @@ class School1(object):
                 i.update_del_f()
             #self.update_del_f_max()
             self.update_best_fish()
+            self.f_max_plot[self.curr_iter] = self.f_max
             self.update_step_ind()
             self.curr_iter += 1
         
@@ -241,7 +243,7 @@ class Fish1:
         d = randint(0,self.school.dim - 1)
         temp = np.copy(self.X)
         if temp[d] != self.school.barycenter[d]: #random bit that is not same is changed
-            if(self.school.curr_weight - self.school.prev_weight > 0):
+            if(self.school.curr_weight - self.school.prev_weight >= 0):
                 temp[d] = self.school.barycenter[d]
             else:
                 temp[d] = not self.school.barycenter[d]
@@ -296,7 +298,9 @@ class School2(object):
         self.f_max = 0.0
         self.f_min = 0.0
         self.best_fish = None
-        self.best_fish_global = None 			
+        self.best_fish_global = None
+        self.f_max_plot = np.zeros(self.max_iter ,dtype = float, order = 'C')
+        self.col_ins_vec = np.zeros(self.dim ,dtype = int, order = 'C')			
         self.objective = objtve 			
         self.barycenter = np.zeros(self.dim ,dtype = float, order = 'C')
 
@@ -318,10 +322,10 @@ class School2(object):
     def get_random_dimensions(self):
         D = []
         D.append(randint(0,self.dim-1))
-        d = randint(0,self.dim-1)
-        while(d == D[0]):
-            d = randint(0,self.dim-1)
-        D.append(d)
+        if(D[0] > 0):
+            D.append(randint(0,D[0]-1))
+        else:
+            D.append(randint(1,self.dim-1))
         return D
         
     def update_school(self):
@@ -330,10 +334,14 @@ class School2(object):
         while self.curr_iter < self.max_iter:
             self.update_plotdata()
             for i in self.school:
-                i.displace_ind()
+                d1 = randint(0,self.dim-1)
+                if d1 > 0:
+                    d2 = randint(0,d1-1)
+                else:
+                    d2 = randint(1,self.dim-1)
+                i.displace_ind(d1,d2)
                 #apply fitness function
                 i.update_del_f()
-                #i.print_fish_status()
             #update the best fish in school(according to current fitness)
             self.update_del_f_max()
             self.update_best_fish()
@@ -342,32 +350,30 @@ class School2(object):
                 i.feed()
             #for each fish Perform the collective instinctive displacement
             #for that calculate the col ins disp vector == col ins disp
-            #self.update_col_ins_vec() # eqn 5
-            D = self.get_random_dimensions()
-            ones_cont = 0
-            zero_cont = 0
-            for i in self.school:
-                for d in D:
-                    if i.X[d] == 1:
-                        ones_cont += i.del_f
-                    elif i.X[d] == 0:
-                        zero_cont += i.del_f
-             
-            for i in self.school:
-                if ones_cont >= zero_cont: # x = x + m
-                    i.displace_col_ins(D,1)
+            self.col_ins_vec.fill(0)
+            for d in range(0,self.dim):
+                ones_cont = 0.0
+                zeros_cont = 0.0
+                for f in self.school:
+                    if f.X[d] == 1:
+                        ones_cont += f.del_f
+                    elif f.X[d] == 0:
+                        zeros_cont += f.del_f
+                if ones_cont > zeros_cont:
+                    self.col_ins_vec[d] = 1
                 else:
-                    i.displace_col_ins(D,0)
-
+                    self.col_ins_vec[d] = 0
+            for f in self.school:
+                f.displace_col_ins()             
             #for each fish Perform the collective volitive displacement
             #for that update school's barycenter
-            D = self.get_random_dimensions()
-            self.update_barycenter(D)
+            #D = self.get_random_dimensions()
+            self.update_barycenter()
             for i in self.school:
-                i.displace_col_vol(D)
+                i.displace_col_vol()
                 i.update_del_f()
-            #self.update_del_f_max()
             self.update_best_fish()
+            self.f_max_plot[self.curr_iter] = self.f_max
             self.curr_iter += 1
         
     def update_plotdata(self):
@@ -408,21 +414,22 @@ class School2(object):
         if(max_global >= 0):
             self.best_fish_global = np.copy(self.school[max_global].X)
 
-    def update_barycenter(self, D):
+    def update_barycenter(self):
         self.update_school_w()
         self.barycenter.fill(0)
-        ones_weight = 0
-        zero_weight = 0
         for d in range(0,self.dim):
+            ones_weight = 0
+            zero_weight = 0
             for f in self.school:
                 if f.X[d] == 1:
                     ones_weight += f.W
                 elif f.X[d] == 0:
                     zero_weight += f.W
-            if ones_weight >= zero_weight:
+            if ones_weight > zero_weight:
                 self.barycenter[d] = 1
             else:
                 self.barycenter[d] = 0
+        #print(self.barycenter)
 
     def update_school_w(self):
         self.prev_weight = self.curr_weight
@@ -440,12 +447,11 @@ class Fish2:
         self.f = getObjective(self.X, self.school.objective) # y = f(x)
         self.f_prev = getObjective(self.X, self.school.objective)
 
-    def displace_ind(self):
+    def displace_ind(self, d1, d2):
         # try individual
         m = np.copy(self.X)  
-        D = self.school.get_random_dimensions()
-        for d in D:
-            m[d] = not m[d]
+        m[d1] = not m[d1]
+        m[d2] = not m[d2]
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f
         if check_constraints_linear(m, self.school.problem.constraints, self.school.problem.bounds) == False:
@@ -465,10 +471,14 @@ class Fish2:
            self.W += (self.del_f)/abs(self.school.del_f_max)
         self.W = min(self.W, self.school.w_scale)
         
-    def displace_col_ins(self,D,bit):
+    def displace_col_ins(self):
         temp = np.copy(self.X) # temp X
-        for d in D:
-            temp[d] = bit
+        #D = self.school.get_random_dimensions()
+        d_count = 0
+        while(d_count < 2):
+            d = randint(0,self.school.dim-1)
+            temp[d] = self.school.col_ins_vec[d]
+            d_count += 1
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f
         if check_constraints_linear(temp, self.school.problem.constraints, self.school.problem.bounds) == False:
@@ -476,13 +486,16 @@ class Fish2:
         np.copyto(self.X, temp, casting='same_kind', where=True)
         self.f = getObjective(self.X, self.school.objective)        
 
-    def displace_col_vol(self, D):
+    def displace_col_vol(self):
         temp = np.copy(self.X)
+            #  #random bit that is not same is changed
+        D = self.school.get_random_dimensions()
         for d in D:
-            # if temp[d] != self.school.barycenter[d]: #random bit that is not same is changed
-            if(self.school.curr_weight - self.school.prev_weight > 0):
+            if(self.school.curr_weight - self.school.prev_weight >= 0):
+                if temp[d] != self.school.barycenter[d]:
                     temp[d] = self.school.barycenter[d]
             else:
+                if temp[d] == self.school.barycenter[d]:
                     temp[d] = not self.school.barycenter[d]
         np.copyto(self.X_prev, self.X, casting='same_kind', where=True)
         self.f_prev = self.f        
@@ -565,8 +578,8 @@ def animate(i,data1,data2):
 f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
 p = parser.parse_single_instance(f_path)
 print(p.bounds)
-T = 10000
-R = 6
+T = 40000
+R = 1
 pop = 30
 avg_f_arr1 = np.zeros(T, dtype=float)
 avg_f_arr2 = np.zeros(T, dtype=float)
@@ -621,9 +634,10 @@ avg_f_arr2 /=R
 print(avg_f_arr1)
 print(avg_f_arr2)
 fig = plt.figure()
-plt.scatter(range(0,T), avg_f_arr1)
-plt.scatter(range(0,T), avg_f_arr2)
-#plt.show()
+ax = plt.axes(xlim=(0, T), ylim=(0,max(s.school.f_max,s2.school.f_max)))
+plt.plot(range(0,T), s.school.f_max_plot, color='red')
+plt.plot(range(0,T), s2.school.f_max_plot, color='blue')
+plt.show()
 plt.savefig('bfss_sbfss_100x30.png')
 print('saved plot')
 #animation generator
