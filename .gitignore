@@ -147,4 +147,5 @@ dmypy.json
 *.code-workspace
 
 # plot
-src/bfss_sbfss_100x30.png 
+src/bfss_sbfss_100x30.png
+bfss_sbfss_100x30.png 

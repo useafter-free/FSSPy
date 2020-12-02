@@ -19,6 +19,7 @@ from colour import Color
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 import sys
+import subprocess as sp
 
 
 class School1(object):
@@ -580,7 +581,8 @@ def animate(i,data1,data2):
 
 
 def final_plot(T, R, pop, step_ind, thresh_c ,thresh_v):
-    f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
+    curr_dir = sp.getoutput("pwd | rev | cut -d'/' -f 1 | rev")
+    f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat' if curr_dir == "src" else './test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
     p = parser.parse_single_instance(f_path)
     print(p.bounds)
     avg_f_arr1 = np.zeros(T, dtype=float)
