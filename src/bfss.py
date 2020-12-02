@@ -16,6 +16,9 @@ import math
 from Problem import Problem
 import dat_parser as parser
 from colour import Color
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
+import sys
 
 
 class School1(object):
@@ -575,71 +578,70 @@ def animate(i,data1,data2):
     scat[1].set_offsets(data2[i*pop:(i+1)*pop,:])
     return scat
 
-f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
-p = parser.parse_single_instance(f_path)
-print(p.bounds)
-T = 40000
-R = 1
-pop = 30
-avg_f_arr1 = np.zeros(T, dtype=float)
-avg_f_arr2 = np.zeros(T, dtype=float)
-for r in range(0,R):
-    print('Run = ',r+1)
-    s = Solver1(1, T, p, pop, 0.5, 0.4 ,0.4)
-    init_time = time.time()
-    s.school.init_fish_school()
-    init_time = time.time() - init_time
-    print('Initialization completed')
-    print('Time taken to initialize = ', init_time, ' seconds')
-    print('Population = ', pop)
-    print('Dimensions = ', p.dim)
-    print('No. of constraints = ', p.n_constraint)
-    print('Max Iterations = ', T)
-    print('Running Simulation...')
-    simu_time = time.time()
-    s.school.update_school()
-    simu_time = time.time() - simu_time
-    print('Algorithm run time = ', simu_time, ' seconds')
-    print('Best Solution = ', s.school.best_fish_global)
-    print('Best Fitness = ', s.school.f_max)
-    print('Average Fitness = ', s.school.f_avg)
-    print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
-    s2 = Solver2(1, T, p, pop)
-    init_time = time.time()
-    s2.school.init_fish_school()
-    init_time = time.time() - init_time
-    print('Initialization completed')
-    print('Time taken to initialize = ', init_time, ' seconds')
-    print('Population = ', pop)
-    print('Dimensions = ', p.dim)
-    print('No. of constraints = ', p.n_constraint)
-    print('Max Iterations = ', T)
-    print('Running Simulation...')
-    simu_time = time.time()
-    s2.school.update_school()
-    simu_time = time.time() - simu_time
-    print('Algorithm run time = ', simu_time, ' seconds')
-    print('Best Solution = ', s2.school.best_fish_global)
-    print('Best Fitness = ', s2.school.f_max)
-    print('Average Fitness = ', s2.school.f_avg)
-    print(check_constraints_linear(s2.school.best_fish_global, s2.problem.constraints, s2.problem.bounds))
 
-    for i in range(0,T):
-        avg_f_arr1[i] += np.amax(s.school.plot_data_xy[i*pop:(i+1)*pop,1])
+def final_plot(T, R, pop, step_ind, thresh_c ,thresh_v):
+    f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
+    p = parser.parse_single_instance(f_path)
+    print(p.bounds)
+    avg_f_arr1 = np.zeros(T, dtype=float)
+    avg_f_arr2 = np.zeros(T, dtype=float)
+    for r in range(0,R):
+        print('Run = ',r+1)
+        s = Solver1(1, T, p, pop, step_ind, thresh_c ,thresh_v)
+        init_time = time.time()
+        s.school.init_fish_school()
+        init_time = time.time() - init_time
+        print('Initialization completed')
+        print('Time taken to initialize = ', init_time, ' seconds')
+        print('Population = ', pop)
+        print('Dimensions = ', p.dim)
+        print('No. of constraints = ', p.n_constraint)
+        print('Max Iterations = ', T)
+        print('Running Simulation...')
+        simu_time = time.time()
+        s.school.update_school()
+        simu_time = time.time() - simu_time
+        print('Algorithm run time = ', simu_time, ' seconds')
+        print('Best Solution = ', s.school.best_fish_global)
+        print('Best Fitness = ', s.school.f_max)
+        print('Average Fitness = ', s.school.f_avg)
+        print(check_constraints_linear(s.school.best_fish_global, s.problem.constraints, s.problem.bounds))
+        s2 = Solver2(1, T, p, pop)
+        init_time = time.time()
+        s2.school.init_fish_school()
+        init_time = time.time() - init_time
+        print('Initialization completed')
+        print('Time taken to initialize = ', init_time, ' seconds')
+        print('Population = ', pop)
+        print('Dimensions = ', p.dim)
+        print('No. of constraints = ', p.n_constraint)
+        print('Max Iterations = ', T)
+        print('Running Simulation...')
+        simu_time = time.time()
+        s2.school.update_school()
+        simu_time = time.time() - simu_time
+        print('Algorithm run time = ', simu_time, ' seconds')
+        print('Best Solution = ', s2.school.best_fish_global)
+        print('Best Fitness = ', s2.school.f_max)
+        print('Average Fitness = ', s2.school.f_avg)
+        print(check_constraints_linear(s2.school.best_fish_global, s2.problem.constraints, s2.problem.bounds))
 
-    for i in range(0,T):
-        avg_f_arr2[i] += np.amax(s2.school.plot_data_xy[i*pop:(i+1)*pop,1])
-avg_f_arr1 /=R
-avg_f_arr2 /=R
-print(avg_f_arr1)
-print(avg_f_arr2)
-fig = plt.figure()
-ax = plt.axes(xlim=(0, T), ylim=(0,max(s.school.f_max,s2.school.f_max)))
-plt.plot(range(0,T), s.school.f_max_plot, color='red')
-plt.plot(range(0,T), s2.school.f_max_plot, color='blue')
-plt.show()
-plt.savefig('bfss_sbfss_100x30.png')
-print('saved plot')
+        for i in range(0,T):
+            avg_f_arr1[i] += np.amax(s.school.plot_data_xy[i*pop:(i+1)*pop,1])
+
+        for i in range(0,T):
+            avg_f_arr2[i] += np.amax(s2.school.plot_data_xy[i*pop:(i+1)*pop,1])
+    avg_f_arr1 /=R
+    avg_f_arr2 /=R
+    print(avg_f_arr1)
+    print(avg_f_arr2)
+    fig = plt.figure()
+    ax = plt.axes(xlim=(0, T), ylim=(0,max(s.school.f_max,s2.school.f_max)))
+    plt.plot(range(0,T), s.school.f_max_plot, color='red')
+    plt.plot(range(0,T), s2.school.f_max_plot, color='blue')
+    plt.show()
+    plt.savefig('bfss_sbfss_100x30.png')
+    print('saved plot')
 #animation generator
 # fig = plt.figure()
 # Writer = animation.writers['ffmpeg']
@@ -662,3 +664,64 @@ print('saved plot')
 # anim = FuncAnimation(fig, animate, fargs=(s.school.plot_data_xy,),frames=T, blit=True,cache_frame_data=False)
 # anim.save('plot_animation_simplified.mp4', writer=writer)
 # print('Saved animation!')
+
+
+
+class Window(QDialog): 
+    def __init__(self): 
+        super(Window, self).__init__() 
+        self.setWindowTitle("Python") 
+        self.setGeometry(300, 300, 500, 500)         
+        self.formGroupBox = QGroupBox("FISH SCHOOL SEARCH") 
+        self.oneLineEdit = QLineEdit() 
+        self.twoLineEdit = QLineEdit()
+        self.threeLineEdit = QLineEdit()
+        self.fourLineEdit = QLineEdit()
+        self.fiveLineEdit = QLineEdit()
+        self.sixLineEdit = QLineEdit()
+    
+        self.onlyInt = QIntValidator()
+        self.onlyDouble = QDoubleValidator()
+
+        self.oneLineEdit.setValidator(self.onlyInt)
+        self.twoLineEdit.setValidator(self.onlyInt)
+        self.threeLineEdit.setValidator(self.onlyInt)
+        self.fourLineEdit.setValidator(self.onlyDouble)
+        self.fiveLineEdit.setValidator(self.onlyDouble)
+        self.sixLineEdit.setValidator(self.onlyDouble)
+
+        self.createForm() 
+  
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel) 
+        self.buttonBox.accepted.connect(self.passArgs) 
+  
+        self.buttonBox.rejected.connect(self.reject) 
+        mainLayout = QVBoxLayout() 
+        mainLayout.addWidget(self.formGroupBox) 
+        mainLayout.addWidget(self.buttonBox) 
+        self.setLayout(mainLayout) 
+ 
+    def passArgs(self): 
+        final_plot(int(self.oneLineEdit.text()), int(self.twoLineEdit.text()), int(self.threeLineEdit.text()), float(self.fourLineEdit.text()), float(self.fiveLineEdit.text()), float(self.sixLineEdit.text()) );
+        self.close()
+
+    def createForm(self): 
+  
+        layout = QFormLayout() 
+        layout.addRow(QLabel("Max No. of Iterations:"), self.oneLineEdit) 
+        layout.addRow(QLabel("Runs"), self.twoLineEdit) 
+        layout.addRow(QLabel("Population"), self.threeLineEdit) 
+        layout.addRow(QLabel("Step ind.:"), self.fourLineEdit) 
+        layout.addRow(QLabel("thresh_c:"), self.fiveLineEdit) 
+        layout.addRow(QLabel("thresh_v"), self.sixLineEdit) 
+
+        self.formGroupBox.setLayout(layout) 
+  
+if __name__ == '__main__': 
+   
+    app = QApplication(sys.argv) 
+    
+    window = Window()  
+    window.show() 
+    
+    app.exec_()
