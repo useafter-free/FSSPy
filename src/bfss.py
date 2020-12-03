@@ -19,7 +19,6 @@ from colour import Color
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIntValidator, QDoubleValidator
 import sys
-import subprocess as sp
 
 
 class School1(object):
@@ -580,9 +579,8 @@ def animate(i,data1,data2):
     return scat
 
 
-def final_plot(T, R, pop, step_ind, thresh_c ,thresh_v):
-    curr_dir = sp.getoutput("pwd | rev | cut -d'/' -f 1 | rev")
-    f_path = '../test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat' if curr_dir == "src" else './test/datasets/MKP/chubeas/OR30x100/OR30x100-0.25_10.dat'
+def final_plot(T, R, pop, step_ind, thresh_c ,thresh_v, fileName):
+    f_path = fileName
     p = parser.parse_single_instance(f_path)
     print(p.bounds)
     avg_f_arr1 = np.zeros(T, dtype=float)
@@ -674,14 +672,18 @@ class Window(QDialog):
         super(Window, self).__init__() 
         self.setWindowTitle("Python") 
         self.setGeometry(300, 300, 500, 500)         
-        self.formGroupBox = QGroupBox("FISH SCHOOL SEARCH") 
+        self.formGroupBox = QGroupBox("FISH SCHOOL SEARCH")
         self.oneLineEdit = QLineEdit() 
         self.twoLineEdit = QLineEdit()
         self.threeLineEdit = QLineEdit()
         self.fourLineEdit = QLineEdit()
         self.fiveLineEdit = QLineEdit()
         self.sixLineEdit = QLineEdit()
-    
+
+        self.btn = QPushButton('Select dataset file')
+        self.btn.clicked.connect(self.openFile)
+        self.msg = QLabel('')
+
         self.onlyInt = QIntValidator()
         self.onlyDouble = QDoubleValidator()
 
@@ -702,20 +704,33 @@ class Window(QDialog):
         mainLayout.addWidget(self.formGroupBox) 
         mainLayout.addWidget(self.buttonBox) 
         self.setLayout(mainLayout) 
- 
+    
+    fileName = None
+    
+
     def passArgs(self): 
-        final_plot(int(self.oneLineEdit.text()), int(self.twoLineEdit.text()), int(self.threeLineEdit.text()), float(self.fourLineEdit.text()), float(self.fiveLineEdit.text()), float(self.sixLineEdit.text()) );
+        final_plot(int(self.oneLineEdit.text()), int(self.twoLineEdit.text()), int(self.threeLineEdit.text()), float(self.fourLineEdit.text()), float(self.fiveLineEdit.text()), float(self.sixLineEdit.text()), self.fileName );
         self.close()
+    
+    def openFile(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        self.fileName, _ = QFileDialog.getOpenFileName(self,"Select dataset file", "","dat Files (*.dat);;All Files (*)", options=options)
+        if self.fileName is not None:
+            print(self.fileName)
+            self.msg.setText("Selected dataset file is: " + self.fileName)
 
     def createForm(self): 
   
         layout = QFormLayout() 
         layout.addRow(QLabel("Max No. of Iterations:"), self.oneLineEdit) 
-        layout.addRow(QLabel("Runs"), self.twoLineEdit) 
+        layout.addRow(QLabel("Runs:"), self.twoLineEdit) 
         layout.addRow(QLabel("Population"), self.threeLineEdit) 
         layout.addRow(QLabel("Step ind.:"), self.fourLineEdit) 
         layout.addRow(QLabel("thresh_c:"), self.fiveLineEdit) 
-        layout.addRow(QLabel("thresh_v"), self.sixLineEdit) 
+        layout.addRow(QLabel("thresh_v:"), self.sixLineEdit)
+        layout.addRow(QLabel("dataset file:"), self.btn)
+        layout.addRow(self.msg)
 
         self.formGroupBox.setLayout(layout) 
   
